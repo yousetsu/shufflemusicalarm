@@ -13,7 +13,7 @@ List<Map> map_stretchlist = <Map>[];
 int notificationType = 0;
 
 //didpop使う為
-//final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
+final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
 /*------------------------------------------------------------------
 全共通のメソッド
  -------------------------------------------------------------------*/
@@ -67,8 +67,8 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.blue).copyWith(secondary: const Color(0xFF2196f3)),
       ),
       home: const MainScreen(),
-      // //didipop使うため
-      // navigatorObservers: [routeObserver],
+       //didipop使うため
+       navigatorObservers: [routeObserver],
     );
   }
 }
@@ -78,34 +78,33 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-//class _MainScreenState extends State<MainScreen> with RouteAware {
-  class _MainScreenState extends State<MainScreen>  {
+class _MainScreenState extends State<MainScreen> with RouteAware {
 
   @override
   void initState() {
     super.initState();
     init();
   }
-  // @override
-  // void didChangeDependencies() { // 遷移時に呼ばれる関数
-  //   // routeObserverに自身を設定(didPopのため)
-  //   super.didChangeDependencies();
-  //   if (ModalRoute.of(context) != null) {
-  //     routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
-  //   }
-  // }
+  @override
+  void didChangeDependencies() { // 遷移時に呼ばれる関数
+    // routeObserverに自身を設定(didPopのため)
+    super.didChangeDependencies();
+    if (ModalRoute.of(context) != null) {
+      routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
+    }
+  }
 
-  // @override
-  // void dispose() {
-  //   // routeObserverから自身を外す(didPopのため)
-  //   routeObserver.unsubscribe(this);
-  //   super.dispose();
-  // }
-  // @override
-  // void didPopNext() {
-  //   // 再描画
-  //   init();
-  // }
+  @override
+  void dispose() {
+    // routeObserverから自身を外す(didPopのため)
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+  @override
+  void didPopNext() {
+    // 再描画
+    init();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
