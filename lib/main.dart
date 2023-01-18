@@ -13,12 +13,13 @@ List<Map> map_stretchlist = <Map>[];
 int notificationType = 0;
 
 //didpop使う為
-final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
+//final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
 /*------------------------------------------------------------------
 全共通のメソッド
  -------------------------------------------------------------------*/
 //初回起動分の処理
 Future<void> firstRun() async {
+  debugPrint("firstRun START");
   String dbpath = await getDatabasesPath();
   //設定テーブル作成
   String path = p.join(dbpath, "internal_assets.db");
@@ -32,7 +33,7 @@ Future<void> firstRun() async {
     } catch (_) {}
 
     // Copy from asset
-    ByteData data = await rootBundle.load(p.join("assets", "ex_stretch_db.db"));
+    ByteData data = await rootBundle.load(p.join("assets", "exShuffle.db"));
     List<int> bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
 
     // Write and flush the bytes written
@@ -42,6 +43,7 @@ Future<void> firstRun() async {
     //print("Opening existing database");
   }
 
+  debugPrint("firstRun END");
 }
 void main() async{
   //SQLfliteで必要？
@@ -55,11 +57,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const MainScreen(),
-        '/setting': (context) => const SettingScreen(),
-      },
       theme: ThemeData(
         // primaryColor: const Color(0xFF191970),
         primaryColor: Colors.blue,
@@ -68,10 +65,10 @@ class MyApp extends StatelessWidget {
         //  backgroundColor: const Color(0xFF191970),
         canvasColor: const Color(0xFFf8f8ff),
         colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.blue).copyWith(secondary: const Color(0xFF2196f3)),
-        fontFamily: 'KosugiMaru',
       ),
-      //didipop使うため
-      navigatorObservers: [routeObserver],
+      home: const MainScreen(),
+      // //didipop使うため
+      // navigatorObservers: [routeObserver],
     );
   }
 }
@@ -81,40 +78,41 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> with RouteAware {
+//class _MainScreenState extends State<MainScreen> with RouteAware {
+  class _MainScreenState extends State<MainScreen>  {
+
   @override
   void initState() {
     super.initState();
     init();
   }
-  @override
-  void didChangeDependencies() { // 遷移時に呼ばれる関数
-    // routeObserverに自身を設定(didPopのため)
-    super.didChangeDependencies();
-    if (ModalRoute.of(context) != null) {
-      routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
-    }
-  }
+  // @override
+  // void didChangeDependencies() { // 遷移時に呼ばれる関数
+  //   // routeObserverに自身を設定(didPopのため)
+  //   super.didChangeDependencies();
+  //   if (ModalRoute.of(context) != null) {
+  //     routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
+  //   }
+  // }
 
-  @override
-  void dispose() {
-    // routeObserverから自身を外す(didPopのため)
-    routeObserver.unsubscribe(this);
-    super.dispose();
-  }
-  @override
-  void didPopNext() {
-    // 再描画
-    init();
-  }
+  // @override
+  // void dispose() {
+  //   // routeObserverから自身を外す(didPopのため)
+  //   routeObserver.unsubscribe(this);
+  //   super.dispose();
+  // }
+  // @override
+  // void didPopNext() {
+  //   // 再描画
+  //   init();
+  // }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('ストレッチタイマー'),backgroundColor: const Color(0xFF6495ed),),
+      appBar: AppBar(title: const Text('シャッフル音楽アラーム'),backgroundColor: const Color(0xFF6495ed),),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children:  <Widget>[
-          //  _listHeader(),
           const Padding(padding: EdgeInsets.all(10)),
           Expanded(
             child: ReorderableListView(
@@ -141,16 +139,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatt
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(label:'タイマー', icon: Icon(Icons.timer)),
-          BottomNavigationBarItem(label:'設定', icon: Icon(Icons.settings)),
-        ],
-        onTap: (int index) {
-          if (index == 1) {Navigator.pushNamed(context, '/setting');}
-        },
-      ),
     );
   }
   void changeList(int oldDbNo, int newDbNo) async{
@@ -174,23 +162,23 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     String query = '';
     String path = p.join(dbPath, 'internal_assets.db');
     Database database = await openDatabase(path, version: 1,);
-    query = ' UPDATE stretchlist set no = $updNo where no = $whereNo';
+    query = ' UPDATE alarmList set alarmno = $updNo where alarmno = $whereNo';
     await database.transaction((txn) async {
       await txn.rawInsert(query);
     });
   }
 
   void insertStretch() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => StretchScreen(cnsStretchScreenIns,-1)),
-    );
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(builder: (context) => StretchScreen(cnsStretchScreenIns,-1)),
+    // );
   }
   void updStretch(int lcNo){
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => StretchScreen(cnsStretchScreenUpd,lcNo)),
-    );
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(builder: (context) => StretchScreen(cnsStretchScreenUpd,lcNo)),
+    // );
   }
 
   Future<void> delStretch(int lcNo) async{
@@ -204,21 +192,12 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     String query = '';
     String path = p.join(dbPath, 'internal_assets.db');
     Database database = await openDatabase(path, version: 1,);
-    query = 'DELETE From stretchlist where no = $lcNo';
+    query = 'DELETE From alarmList where alarmno = $lcNo';
     await database.transaction((txn) async {
       await txn.rawInsert(query);
     });
   }
-  // Widget _listHeader() {
-  //   return Container(
-  //       decoration:  const BoxDecoration(
-  //           border: Border(bottom: BorderSide(width: 1.0, color: Colors.grey))),
-  //
-  //       child: ListTile(
-  //           title:  Row(children:  <Widget>[
-  //             Text('エクササイズリスト', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-  //           ])));
-  // }
+
   Future<void> getItems() async {
     List<Widget> list = <Widget>[];
     int listNo = 0;
@@ -238,11 +217,11 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
       dtTime = DateTime.parse(item['time']);
       strTimeText = '${dtTime.minute.toString().padLeft(2,'0')}分${dtTime.second.toString().padLeft(2,'0')}秒';
 
-      if (item['presecond'] > 0) {
-        strPreSecondText = '　準備：${item['presecond'].toString()}秒';
-      }else{
-        strPreSecondText = '';
-      }
+      // if (item['presecond'] > 0) {
+      //   strPreSecondText = '　準備：${item['presecond'].toString()}秒';
+      // }else{
+      //   strPreSecondText = '';
+      // }
 
       if(item['title'].toString().length > 10) {
         titleFont = 15;
@@ -271,7 +250,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
             title: Text('${item['title']}  ', style: TextStyle(color: const Color(0xFF191970) , fontSize: titleFont),),
             subtitle: Row(children:  <Widget>[
               Text(' $strTimeText ', style:const TextStyle(color: Colors.blue , fontSize: 25) ),
-              Icon(Icons.swap_horiz,size: 25,color:  ( item['otherside'] == cnsOtherSideOn) ?Colors.blue:Colors.white,) ,
+            //  Icon(Icons.swap_horiz,size: 25,color:  ( item['otherside'] == cnsOtherSideOn) ?Colors.blue:Colors.white,) ,
               Text(strPreSecondText,  style: const TextStyle(color: Colors.grey , fontSize: 15) ),] ),
             trailing: PopupMenuButton(
               itemBuilder: (context) {
@@ -285,24 +264,24 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
               onSelected: (String list) {
                 switch (list) {
                   case '編集':
-                    updStretch(item['no']);
+                    updStretch(item['alarmno']);
                     break;
                   case '削除':
-                    delStretch(item['no']);
+                    delStretch(item['alarmno']);
                     break;
                 }
               },
             ),
 
             //    isThreeLine: true,
-            selected: listNo == item['no'],
+            selected: listNo == item['alarmno'],
             onTap: () {
-              listNo = item['no'];
-              listTitle = item['title'];
-              listTime = item['time'];
-              listOtherSide = item['otherside'];
-              listPreSecond = (item['presecond'] == null)? 0 : item['presecond'];
-              _tapTile(listTitle,listTime,listOtherSide,listPreSecond);
+              // listNo = item['no'];
+              // listTitle = item['title'];
+              // listTime = item['time'];
+              // listOtherSide = item['otherside'];
+              // listPreSecond = (item['presecond'] == null)? 0 : item['presecond'];
+              // _tapTile(listTitle,listTime,listOtherSide,listPreSecond);
             },
           ),
         ),
@@ -313,12 +292,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
   }
   void _tapTile(String listTitle ,String listTime, int listOtherSide,int listPreSecond) {
 
-    showDialog(
-      context: context,
-      builder: (_) {
-        return AwesomeDialog(listTitle,listTime,listOtherSide,listPreSecond,notificationType);
-      },
-    );
+
   }
   /*------------------------------------------------------------------
 第一画面ロード
@@ -327,31 +301,19 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     String dbPath = await getDatabasesPath();
     String path = p.join(dbPath, 'internal_assets.db');
     Database database = await openDatabase(path, version: 1);
-    map_stretchlist = await database.rawQuery("SELECT * From stretchlist order by no");
+    map_stretchlist = await database.rawQuery("SELECT * From alarmList order by alarmno");
   }
   /*------------------------------------------------------------------
 初期処理
  -------------------------------------------------------------------*/
   void init() async {
     // await  testEditDB();
+    debugPrint("loadList");
     await loadList();
+    debugPrint("getItems");
     await getItems();
-    notificationType = await getNotificationType();
   }
-  /*------------------------------------------------------------------
-通知タイプ取得
- -------------------------------------------------------------------*/
-  Future<int> getNotificationType() async{
-    int type = 0;
-    String dbPath = await getDatabasesPath();
-    String path = p.join(dbPath, 'internal_assets.db');
-    Database database = await openDatabase(path, version: 1,);
-    List<Map> mapSetting = await database.rawQuery("SELECT * From setting limit 1");
-    for(Map item in mapSetting){
-      type = item['notificationsetting'];
-    }
-    return type;
-  }
+
 }
 
 
