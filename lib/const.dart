@@ -1,8 +1,8 @@
 const int cnsOtherSideOff = 0;
 const int cnsOtherSideOn = 1;
 
-const String cnsStretchScreenIns = 'ins';
-const String cnsStretchScreenUpd = 'upd';
+const String cnsAlarmDetailScreenIns = 'ins';
+const String cnsAlarmDetailScreenUpd = 'upd';
 
 const int cnsNotificationTypeNo = 0; ///なし
 const int cnsNotificationTypeVib = 1; ///バイブレーション

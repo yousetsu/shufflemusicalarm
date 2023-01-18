@@ -174,10 +174,10 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     // );
   }
   void updStretch(int lcNo){
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(builder: (context) => StretchScreen(cnsStretchScreenUpd,lcNo)),
-    // );
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AlarmDetailScreen(cnsAlarmDetailScreenUpd,lcNo)),
+    );
   }
 
   Future<void> delStretch(int lcNo) async{
