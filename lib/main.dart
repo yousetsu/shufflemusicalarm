@@ -5,7 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import './const.dart';
-import './dialog.dart';
+import './alarmdetail.dart';
+import './playlist.dart';
 
 List<Widget> _items = <Widget>[];
 List<Map> map_stretchlist = <Map>[];
