@@ -36,18 +36,40 @@ class _playListEditScreenState extends State<playListEditScreen> {
   }
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children:  <Widget>[
-          const Padding(padding: EdgeInsets.all(10)),
-          Expanded(
-            child: ListView(
-              children: _items,
+    return MaterialApp(
+        home: DefaultTabController(
+            length: 3,
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('プレイリスト編集画面'),
+              bottom: const TabBar(tabs: <Widget>[
+                Tab(icon: Icon(Icons.cloud_outlined)),
+                Tab(icon: Icon(Icons.beach_access_sharp)),
+                Tab(icon: Icon(Icons.brightness_5_sharp)),
+              ]),
             ),
-          ),
+            body:  TabBarView(
+            children: <Widget>[
+              Center(
+                child:
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children:  <Widget>[
+                    Expanded(
+                      child: ListView(
+                        children: _items,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        Center(child: Text('雨', style: TextStyle(fontSize: 50))),
+        Center(child: Text('晴れ', style: TextStyle(fontSize: 50))),
         ],
-      ),
+
+          ),
+        ),
+        ),
     );
   }
   void buttonPressed() async{
