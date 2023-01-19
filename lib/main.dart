@@ -19,7 +19,6 @@ final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
  -------------------------------------------------------------------*/
 //初回起動分の処理
 Future<void> firstRun() async {
-  debugPrint("firstRun START");
   String dbpath = await getDatabasesPath();
   //設定テーブル作成
   String path = p.join(dbpath, "internal_assets.db");
@@ -42,8 +41,6 @@ Future<void> firstRun() async {
   } else {
     //print("Opening existing database");
   }
-
-  debugPrint("firstRun END");
 }
 void main() async{
   //SQLfliteで必要？
@@ -307,9 +304,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
  -------------------------------------------------------------------*/
   void init() async {
     // await  testEditDB();
-    debugPrint("loadList");
     await loadList();
-    debugPrint("getItems");
     await getItems();
   }
 

@@ -4,6 +4,7 @@ import 'package:flutter_picker/flutter_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import './const.dart';
+import './playlist.dart';
 
 
 class AlarmDetailScreen extends StatefulWidget {
@@ -136,6 +137,21 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
                   },
                   child: Text('${_time.minute.toString().padLeft(2,'0')}分${_time.second.toString().padLeft(2,'0')}秒', style: const TextStyle(fontSize: 30),),
                 ),
+                ///音楽ファイル選択ボタン
+                SizedBox(
+                  width: 200, height: 70,
+                  child: ElevatedButton(
+                    onPressed: musicSelButtonPressed,
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.blue
+                      , elevation: 16
+                      ,shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    ),
+                    child: Text( '音楽ファイル選択', style:  TextStyle(fontSize: 30.0, color: Colors.white,),),
+                  ),
+                ),
 
                 Padding(padding: EdgeInsets.all(10)),
                 ///保存ボタン
@@ -193,6 +209,13 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
 
     Navigator.pop(context);
   }
+  void musicSelButtonPressed() async{
+    int fileListNo = 0;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => playListEditScreen(fileListNo)),
+    );
+  }
   Future<void> init()async{
     switch (mode) {
     //登録モード
@@ -222,9 +245,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
       lcTitle = item['title'];
       lcTime = item['time'];
       // lcOtherSideFlag = item['otherside'];
-
     }
-
     setState(() {
       _textControllerTitle.text = lcTitle;
       _time = DateTime.parse(lcTime);
