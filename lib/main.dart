@@ -201,28 +201,53 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     String listTitle ='';
     String listTime ='';
     int listOtherSide = 0;
-    String strPreSecondText = '';
+    String strWeekText = '';
     String strTimeText = '';
     DateTime dtTime = DateTime.now();
     int listPreSecond = 0;
     final lists = ['編集', '削除'];
-
+    var isAlarmOn = false;
     int index = 0;
     for (Map item in map_stretchlist) {
       //反対側ありなし判定
       dtTime = DateTime.parse(item['time']);
-      strTimeText = '${dtTime.minute.toString().padLeft(2,'0')}分${dtTime.second.toString().padLeft(2,'0')}秒';
-
+      strTimeText = '${dtTime.hour.toString().padLeft(2,'0')}:${dtTime.minute.toString().padLeft(2,'0')}';
       // if (item['presecond'] > 0) {
       //   strPreSecondText = '　準備：${item['presecond'].toString()}秒';
       // }else{
       //   strPreSecondText = '';
       // }
+      int weekcnt = 0;
+      if(item['mon'] == 1) {
+        strWeekText = '$strWeekText月';
+      }
+      if(item['tue'] == 1) {
+        strWeekText =  '$strWeekText火';
+      }
+      if(item['wed'] == 1) {
+        strWeekText =  '$strWeekText水';
+      }
+      if(item['thu'] == 1) {
+        strWeekText =  '$strWeekText木';
+      }
+      if(item['fri'] == 1) {
+        strWeekText =  '$strWeekText金';
+      }
+      if(item['sat'] == 1) {
+        strWeekText =  '$strWeekText土';
+      }
+      if(item['sun'] == 1) {
+        strWeekText =  '$strWeekText日';
+      }
+      if(strWeekText == '月火水木金土日')
+      {
+        strWeekText = '毎日';
+      }
 
       if(item['title'].toString().length > 10) {
-        titleFont = 15;
+        titleFont = 10;
       }else{
-        titleFont = 25;
+        titleFont = 15;
       }
 
       list.add(
@@ -240,14 +265,21 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
             // tileColor: (item['getupstatus'].toString() == cnsGetupStatusS)
             //     ? Colors.green
             //     : Colors.grey,
-            //  leading: boolAchieveReleaseFlg
-            //      ? const Icon(Icons.play_circle, color: Colors.blue, size: 18,)
-            //      : const Icon(Icons.stop_circle, size: 18,),
-            title: Text('${item['title']}  ', style: TextStyle(color: const Color(0xFF191970) , fontSize: titleFont),),
-            subtitle: Row(children:  <Widget>[
-              Text(' $strTimeText ', style:const TextStyle(color: Colors.blue , fontSize: 25) ),
-            //  Icon(Icons.swap_horiz,size: 25,color:  ( item['otherside'] == cnsOtherSideOn) ?Colors.blue:Colors.white,) ,
-              Text(strPreSecondText,  style: const TextStyle(color: Colors.grey , fontSize: 15) ),] ),
+              leading: Switch(
+                value: isAlarmOn,
+                onChanged: (bool? value) {
+                  if (value != null) {
+                    setState(() {isAlarmOn = value;});
+                  }},),
+            title: Text(' $strTimeText ', style:const TextStyle(color: Colors.blue , fontSize: 30) ),
+            subtitle:
+            Column(
+              children:  <Widget>[
+                      Text('${item['title']}  ', style: TextStyle(color: const Color(0xFF191970) , fontSize: titleFont),),
+                Text(strWeekText, style: TextStyle(color: const Color(0xFF191970) , fontSize: titleFont),),
+              ],
+            ),
+
             trailing: PopupMenuButton(
               itemBuilder: (context) {
                 return lists.map((String list) {
@@ -269,16 +301,8 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
               },
             ),
 
-            //    isThreeLine: true,
             selected: listNo == item['alarmno'],
-            onTap: () {
-              // listNo = item['no'];
-              // listTitle = item['title'];
-              // listTime = item['time'];
-              // listOtherSide = item['otherside'];
-              // listPreSecond = (item['presecond'] == null)? 0 : item['presecond'];
-              // _tapTile(listTitle,listTime,listOtherSide,listPreSecond);
-            },
+
           ),
         ),
       );
@@ -286,10 +310,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     }
     setState(() {_items = list;});
   }
-  void _tapTile(String listTitle ,String listTime, int listOtherSide,int listPreSecond) {
 
-
-  }
   /*------------------------------------------------------------------
 第一画面ロード
  -------------------------------------------------------------------*/

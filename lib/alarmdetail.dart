@@ -6,7 +6,6 @@ import 'package:sqflite/sqflite.dart';
 import './const.dart';
 import './playlist.dart';
 
-
 class AlarmDetailScreen extends StatefulWidget {
   String mode = '';
   int no = 0;
@@ -26,7 +25,6 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
   final _formPreSecondKey = GlobalKey<FormState>();
   final _textControllerTitle = TextEditingController();
   final _textControllerPreSecond = TextEditingController();
-
 
   String title = 'モードなし';
   DateTime _time = DateTime.utc(0, 0, 0);
@@ -63,6 +61,44 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
           child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children:  <Widget>[
+                Padding(padding: EdgeInsets.all(10)),
+                ///時間
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const <Widget>[
+                    Icon(Icons.timer,size: 25,color: Colors.blue),
+                    Text('時間',style:TextStyle(fontSize: 25.0,color: Color(0xFF191970))),
+                  ],
+                ),
+                const Padding(padding: EdgeInsets.all(10)),
+
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.lightBlueAccent,
+                    padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),),
+                  onPressed: () async {
+                    Picker(
+                        adapter: DateTimePickerAdapter(
+                            type: PickerDateTimeType.kHMS,
+                            value: _time,
+                            customColumnType: [3, 4]),
+                        title: const Text("Select Time"),
+                        onConfirm: (Picker picker, List value) {
+                          setState(() => {
+                            _time = DateTime.utc(2016, 5, 1, value[0], value[1],0),
+                          });
+                        },
+                        onSelect: (Picker picker, int index, List<int> selected){
+                          _time = DateTime.utc(2016, 5, 1, selected[0], selected[1],0);
+                        }
+                    ).showModal(context);
+                  },
+                  child: Text('${_time.hour.toString().padLeft(2,'0')}:${_time.minute.toString().padLeft(2,'0')}', style: const TextStyle(fontSize: 35),),
+                ),
                 Padding(padding: EdgeInsets.all(10)),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -102,41 +138,8 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
                 ),
 
                 const Padding(padding: EdgeInsets.all(10)),
-                ///時間
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const <Widget>[
-                    Icon(Icons.timer,size: 25,color: Colors.blue),
-                    Text('時間',style:TextStyle(fontSize: 25.0,color: Color(0xFF191970))),
-                  ],
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: Colors.lightBlueAccent,
-                    padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),),
-                  onPressed: () async {
-                    Picker(
-                        adapter: DateTimePickerAdapter(
-                            type: PickerDateTimeType.kHMS,
-                            value: _time,
-                            customColumnType: [4, 5]),
-                        title: const Text("Select Time"),
-                        onConfirm: (Picker picker, List value) {
-                          setState(() => {
-                            _time = DateTime.utc(2016, 5, 1, 0,value[0], value[1]),
-                          });
-                        },
-                        onSelect: (Picker picker, int index, List<int> selected){
-                          _time = DateTime.utc(2016, 5, 1, 0,selected[0], selected[1]);
-                        }
-                    ).showModal(context);
-                  },
-                  child: Text('${_time.minute.toString().padLeft(2,'0')}分${_time.second.toString().padLeft(2,'0')}秒', style: const TextStyle(fontSize: 30),),
-                ),
+
+
                 ///音楽ファイル選択ボタン
                 SizedBox(
                   width: 200, height: 70,
@@ -149,9 +152,12 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     ),
-                    child: Text( '音楽ファイル選択', style:  TextStyle(fontSize: 30.0, color: Colors.white,),),
+                    child: Text( '音楽ファイル選択', style:  TextStyle(fontSize: 20.0, color: Colors.white,),),
                   ),
                 ),
+                Text('曜日',style:TextStyle(fontSize: 25.0,color: Color(0xFF191970))),
+
+                Text('再生モード',style:TextStyle(fontSize: 25.0,color: Color(0xFF191970))),
 
                 Padding(padding: EdgeInsets.all(10)),
                 ///保存ボタン
