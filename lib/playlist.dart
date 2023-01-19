@@ -38,14 +38,13 @@ class _playListEditScreenState extends State<playListEditScreen> {
   Widget build(BuildContext context) {
     return MaterialApp(
         home: DefaultTabController(
-            length: 3,
+            length: 2,
           child: Scaffold(
             appBar: AppBar(
               title: const Text('プレイリスト編集画面'),
               bottom: const TabBar(tabs: <Widget>[
-                Tab(icon: Icon(Icons.cloud_outlined)),
-                Tab(icon: Icon(Icons.beach_access_sharp)),
-                Tab(icon: Icon(Icons.brightness_5_sharp)),
+                Tab(text: 'Musicフォルダ'),
+                Tab(text: 'プレイリスト')
               ]),
             ),
             body:  TabBarView(
@@ -64,7 +63,6 @@ class _playListEditScreenState extends State<playListEditScreen> {
                 ),
               ),
         Center(child: Text('雨', style: TextStyle(fontSize: 50))),
-        Center(child: Text('晴れ', style: TextStyle(fontSize: 50))),
         ],
 
           ),

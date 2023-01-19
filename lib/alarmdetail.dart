@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_picker/flutter_picker.dart';
@@ -30,6 +32,13 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
   DateTime _time = DateTime.utc(0, 0, 0);
   String buttonName = '登録';
 
+  bool monFlg = false;
+  bool tueFlg = false;
+  bool wedFlg = false;
+  bool thuFlg = false;
+  bool friFlg = false;
+  bool satFlg = false;
+  bool sunFlg = false;
 
   @override
   void initState() {
@@ -156,6 +165,38 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
                   ),
                 ),
                 Text('曜日',style:TextStyle(fontSize: 25.0,color: Color(0xFF191970))),
+
+                Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children:  <Widget>[
+                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
+                        onPressed: () {setState(() {monFlg = !monFlg;});},
+                        child: Text( '月', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
+                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
+                        onPressed: () {setState(() {monFlg = !monFlg;});},
+                        child: Text( '火', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
+                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
+                        onPressed: () {setState(() {monFlg = !monFlg;});},
+                        child: Text( '水', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
+                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
+                        onPressed: () {setState(() {monFlg = !monFlg;});},
+                        child: Text( '木', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
+                       ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
+                         onPressed: () {setState(() {monFlg = !monFlg;});},
+                         child: Text( '金', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
+                    ]
+                ),
+        Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children:  <Widget>[
+                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
+                        onPressed: () {setState(() {monFlg = !monFlg;});},
+                        child: Text( '土', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
+                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
+                        onPressed: () {setState(() {monFlg = !monFlg;});},
+                        child: Text( '日', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
+            ]
+        ),
 
                 Text('再生モード',style:TextStyle(fontSize: 25.0,color: Color(0xFF191970))),
 
