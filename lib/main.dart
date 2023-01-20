@@ -260,11 +260,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
           key: Key('$index'),
           child: ListTile(
             contentPadding: const EdgeInsets.all(10),
-            //  key: Key('$index'),
-            //tileColor: Colors.grey,
-            // tileColor: (item['getupstatus'].toString() == cnsGetupStatusS)
-            //     ? Colors.green
-            //     : Colors.grey,
               leading: Switch(
                 value: isAlarmOn,
                 onChanged: (bool? value) {
