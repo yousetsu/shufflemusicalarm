@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import './const.dart';
 import './alarmdetail.dart';
+import 'dart:math' as math;
 import 'package:just_audio/just_audio.dart';
 import './playlist.dart';
 
@@ -266,7 +267,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
                 onChanged: (bool? value) {
                   if (value != null) {
                     setState(() {isAlarmOn = value;});
-                    setAlarm(item['alarmno'],isAlarmOn,dtTime,strWeekText,item['playmode']);
+                    setAlarm(item['alarmno'],isAlarmOn,dtTime,strWeekText,item['playmode'],item['filelistno']);
                   }},),
 
             title: Text(' $strTimeText ', style:const TextStyle(color: Colors.blue , fontSize: 30) ),
@@ -298,9 +299,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
                 }
               },
             ),
-
             selected: listNo == item['alarmno'],
-
           ),
         ),
       );
@@ -308,7 +307,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     }
     setState(() {_items = list;});
   }
-
   /*------------------------------------------------------------------
 第一画面ロード
  -------------------------------------------------------------------*/
@@ -327,16 +325,15 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     await getItems();
   }
 //item['alarmno'],isAlarmOn,dtTime,strWeekText,item['playmode']
-  Future<void> setAlarm(int alarmNo, bool isAlarmOn, DateTime alarmTime, String strWeekText, int playMode)  async{
-    int no = 3;
+  Future<void> setAlarm(int alarmNo, bool isAlarmOn, DateTime alarmTime, String strWeekText, int playMode,int filelistno)  async{
+    int no = 0;
     debugPrint('setAlarm Start');
     testFLG = !testFLG;
     if(testFLG) {
       debugPrint('スイッチオン');
-      ///PlaylistからNOを取得
+      ///PlaylistからNOを取得し、ランダムで1つ返す
+      no = await getPlayListRandomNo(filelistno);
 
-
-      ///そのナンバーをランダムで選択
 
       ///そのナンバーからpath名を取得
       String musicPath = await getPlayListPath(no);
@@ -347,8 +344,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     await _player.setFilePath(musicPath);
     await _player.play();
      // playMusic(musicPath);
-
-
     }else{
       debugPrint('スイッチオフ');
       await _player.stop();
@@ -357,6 +352,35 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     debugPrint('setAlarm END');
 
   }
+  Future<int>  getPlayListRandomNo(int fileListNo) async {
+    int LcRandomNo = 1;
+    int lcMaxNo = 0;
+    lcMaxNo = await getPlayListMaxNo(fileListNo);
+
+    //ここでランダム範囲を設定(1 以上 lcMaxNo 未満)
+    LcRandomNo = randomIntWithRange(1,lcMaxNo+1);
+    debugPrint('RandomNo:$LcRandomNo');
+    return LcRandomNo;
+
+  }
+  Future<int> getPlayListMaxNo(int fileListNo) async {
+
+    int lcMaxNo = 0;
+    String dbPath = await getDatabasesPath();
+    String path = p.join(dbPath, 'internal_assets.db');
+    Database database = await openDatabase(path, version: 1);
+    List<Map> lcMapPlayList = await database.rawQuery("SELECT max(no) maxNo From playList where filelistno = $fileListNo");
+    for(Map item in lcMapPlayList){
+      lcMaxNo = (item['maxNo'] != null)?item['maxNo']:0;
+    }
+    debugPrint('MaxNo:$lcMaxNo');
+    return lcMaxNo;
+  }
+  int randomIntWithRange(int min, int max) {
+    int value =  math.Random().nextInt(max - min);
+    return value + min;
+  }
+
   Future<String>  getPlayListPath(int fileListNo) async {
     String musicPath = '';
     String dbPath = await getDatabasesPath();

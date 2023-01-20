@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:external_path/external_path.dart';
@@ -206,16 +205,12 @@ Playlistデータ取得
     setState(() {_itemsPlayList = list;});
   }
   Future<void> tapLongPlayListTile(int alarmNo,String name ,String path, int fileListNo) async{
-
-    ///指定したPlayListNoを削除
+    //指定したPlayListNoを削除
     await delPlayList(alarmNo,fileListNo);
-
-    ///番号振り直し
+    //番号振り直し
    await updPlayListReNo(fileListNo);
-
-    ///トーストで登録された旨を表示
+    //トーストで登録された旨を表示
     Fluttertoast.showToast(msg: 'プレイリストから$nameが削除されました');
-
     //再取得
     init();
   }
