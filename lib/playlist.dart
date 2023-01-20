@@ -8,6 +8,7 @@ import 'package:flutter_picker/flutter_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import './const.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 List<Widget> _items = <Widget>[];
 List<Map> mapPlayList = <Map>[];
@@ -135,15 +136,42 @@ class _playListEditScreenState extends State<playListEditScreen> {
   }
   Future<void> _tapTile(String name ,String path, int fileListNo) async{
 
+    int intPlayListMaxNo = 0;
     //ファイルリストNo（現在固定ゼロ）の最大MaxNoを取得
 
+    intPlayListMaxNo = await getPlayListMaxNo(fileListNo);
+
+    debugPrint('MaxNo:$intPlayListMaxNo');
 
     //プレイリストテーブルに登録
-
+    await insPlayList(intPlayListMaxNo+1,fileListNo,name,path);
 
     //トーストで登録された旨を表示
+    Fluttertoast.showToast(msg: 'プレイリストに$nameが登録されました');
 
+  }
+  Future<int> getPlayListMaxNo(int fileListNo) async{
+    int maxNo = 0;
+    String dbPath = await getDatabasesPath();
+    String path = p.join(dbPath, 'internal_assets.db');
+    Database database = await openDatabase(path, version: 1,);
+    List<Map> result = await database.rawQuery("SELECT MAX(no) no From playList where filelistno = $fileListNo");
+    for (Map item in result) {
+      maxNo = (item['no'] != null)?item['no']:0;
+    }
 
+    return maxNo;
+  }
+  Future<void> insPlayList(int intPlayListMaxNo, int fileListNo, String name, String path) async{
+    String dbPath = await getDatabasesPath();
+    String query = '';
+    String path = p.join(dbPath, 'internal_assets.db');
+    Database database = await openDatabase(path, version: 1,);
+
+    query = 'INSERT INTO playList(no,filelistno,musicname,musicpath,kaku1,kaku2,kaku3,kaku4) values($intPlayListMaxNo,$fileListNo,"$name","$path",null,null,null,null) ';
+    await database.transaction((txn) async {
+      await txn.rawInsert(query);
+    });
   }
   /*------------------------------------------------------------------
 第一画面ロード
@@ -154,7 +182,7 @@ class _playListEditScreenState extends State<playListEditScreen> {
     // Database database = await openDatabase(path, version: 1);
     // mapPlayList = await database.rawQuery("SELECT * From alarmList order by alarmno");
 
-    int no = 3;
+    int no = 0;
   //  Directory appDocDir = await getApplicationDocumentsDirectory();
   //  String appDocPath = appDocDir.path;
 
@@ -183,11 +211,11 @@ class _playListEditScreenState extends State<playListEditScreen> {
     // String? strDir = Dir?.path;
     // debugPrint('Directory:$strDir');
     // var plist = Dir?.listSync();
-    mapPlayList = [
-      {'No':1, 'filelistno':0,'musicname':'電撃戦隊チェンジマン.mp3','musicpath':'musicpath1'},
-      {'No':2, 'filelistno':0,'musicname':'超電子バイオマン.mp3','musicpath':'musicpath2'},
-
-    ];
+    // mapPlayList = [
+    //   {'No':1, 'filelistno':0,'musicname':'電撃戦隊チェンジマン.mp3','musicpath':'musicpath1'},
+    //   {'No':2, 'filelistno':0,'musicname':'超電子バイオマン.mp3','musicpath':'musicpath2'},
+    //
+    // ];
     for( var p in plist! ){
       final reg = RegExp(r'\.mp3');
       if(reg.hasMatch(p.path)) {
@@ -210,6 +238,7 @@ class _playListEditScreenState extends State<playListEditScreen> {
     await loadList();
     await getItems();
   }
+
 
 
 }
