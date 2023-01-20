@@ -78,13 +78,12 @@ class _playListEditScreenState extends State<playListEditScreen> {
     List<Widget> list = <Widget>[];
     int listNo = 0;
     double titleFont = 25;
-    String listTitle ='';
-    String listTime ='';
-    int listOtherSide = 0;
+    String strMusicName ='';
+    String strMusicPath ='';
+    int intFileListNo = 0;
     String strPreSecondText = '';
     String strTimeText = '';
     DateTime dtTime = DateTime.now();
-
 
     int index = 0;
     for (Map item in mapPlayList) {
@@ -97,7 +96,6 @@ class _playListEditScreenState extends State<playListEditScreen> {
 
       list.add(
         Card(
-
           margin: const EdgeInsets.fromLTRB(15,0,15,15),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
@@ -122,12 +120,11 @@ class _playListEditScreenState extends State<playListEditScreen> {
             //    isThreeLine: true,
             selected: listNo == item['filelistno'],
             onTap: () {
-              // listNo = item['no'];
-              // listTitle = item['title'];
-              // listTime = item['time'];
-              // listOtherSide = item['otherside'];
-              // listPreSecond = (item['presecond'] == null)? 0 : item['presecond'];
-              // _tapTile(listTitle,listTime,listOtherSide,listPreSecond);
+              intFileListNo = fileListNo;  //拡張用
+              strMusicName = item['musicname'];
+              strMusicPath = item['musicpath'];
+
+              _tapTile(strMusicName,strMusicPath,intFileListNo);
             },
           ),
         ),
@@ -136,7 +133,15 @@ class _playListEditScreenState extends State<playListEditScreen> {
     }
     setState(() {_items = list;});
   }
-  void _tapTile(String listTitle ,String listTime, int listOtherSide,int listPreSecond) {
+  Future<void> _tapTile(String name ,String path, int fileListNo) async{
+
+    //ファイルリストNo（現在固定ゼロ）の最大MaxNoを取得
+
+
+    //プレイリストテーブルに登録
+
+
+    //トーストで登録された旨を表示
 
 
   }
@@ -190,7 +195,7 @@ class _playListEditScreenState extends State<playListEditScreen> {
           'No': no,
           'filelistno': 0,
           'musicname': p.path,
-          'musicpath': 'musicpath1'
+          'musicpath': p.path,
         });
       }
       debugPrint('path:${p.path}');
