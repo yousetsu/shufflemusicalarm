@@ -12,11 +12,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 //Musicフォルダ用一覧
 List<Widget> _itemsMusicFolder = <Widget>[];
 List<Map> mapMusicFolder = <Map>[];
-
 //プレイリスト用一覧
 List<Widget> _itemsPlayList = <Widget>[];
 List<Map> mapPlayList = <Map>[];
-
 
 class playListEditScreen extends StatefulWidget {
   int fileListNo = 0;
@@ -30,10 +28,6 @@ class playListEditScreen extends StatefulWidget {
 class _playListEditScreenState extends State<playListEditScreen> {
   int fileListNo = 0;
   _playListEditScreenState(this.fileListNo);
-
-  String title = 'モードなし';
-  DateTime _time = DateTime.utc(0, 0, 0);
-  String buttonName = '登録';
 
   @override
   void initState() {
@@ -53,7 +47,6 @@ class _playListEditScreenState extends State<playListEditScreen> {
                 Tab(text: 'プレイリスト')
               ]),
             ),
-
             body:  TabBarView(
             children: <Widget>[
               ///MusicFolder
@@ -67,7 +60,6 @@ class _playListEditScreenState extends State<playListEditScreen> {
                 children:  <Widget>[Expanded(child: ListView(children: _itemsPlayList,),),],
               ),),
         ],
-
           ),
         ),
         ),
@@ -141,7 +133,6 @@ MusicFolderデータ取得
     for (Map item in result) {
       maxNo = (item['no'] != null)?item['no']:0;
     }
-
     return maxNo;
   }
   Future<void> insPlayList(int intPlayListMaxNo, int fileListNo, String name, String musicPath) async{
@@ -160,33 +151,29 @@ MusicFolderデータ取得
     String path;
     mapMusicFolder = <Map>[];
 
-    path = await ExternalPath.getExternalStoragePublicDirectory(
-        ExternalPath.DIRECTORY_MUSIC);
-
+    path = await ExternalPath.getExternalStoragePublicDirectory(ExternalPath.DIRECTORY_MUSIC);
     Directory pDir = Directory(path);
+    List<FileSystemEntity>  plist = pDir.listSync(recursive: true);
 
-    var plist = pDir.listSync(recursive: true);
-
-    for( var p in plist! ){
+    for( var item in plist! ){
       final reg = RegExp(r'\.mp3');
-      if(reg.hasMatch(p.path)) {
+      if(reg.hasMatch(item.path)) {
         mapMusicFolder.add({
           'No': no,
           'filelistno': 0,
-          'musicname': p.path,
-          'musicpath': p.path,
+          'musicname': p.basename(item.path),
+          'musicpath': item.path,
         });
       }
       no++;
     }
-
   }
 /*------------------------------------------------------------------
 Playlistデータ取得
  -------------------------------------------------------------------*/
   Future<void> getitemsPlayList() async {
     List<Widget> list = <Widget>[];
-    int listNo = 0;
+    int intAlarmNo = 0;
     double titleFont = 15;
     String strMusicName ='';
     String strMusicPath ='';
@@ -194,7 +181,6 @@ Playlistデータ取得
 
     int index = 0;
     for (Map item in mapPlayList) {
-
       list.add(
         Card(
           shape: RoundedRectangleBorder(
@@ -203,12 +189,15 @@ Playlistデータ取得
           key: Key('$index'),
           child: ListTile(
             title: Text('${item['musicname']}  ', style: TextStyle(color: const Color(0xFF191970) , fontSize: titleFont),),
-            selected: listNo == item['filelistno'],
+            selected: intAlarmNo == item['no'],
             onLongPress: () {
+              intAlarmNo = item['no'];
+              debugPrint('listNo:$intAlarmNo');
+              debugPrint('itemNo:${item['no']}');
               intFileListNo = fileListNo;  //拡張用
               strMusicName = item['musicname'];
               strMusicPath = item['musicpath'];
-              tapLongPlayListTile(strMusicName,strMusicPath,intFileListNo);
+              tapLongPlayListTile(intAlarmNo,strMusicName,strMusicPath,intFileListNo);
             },
           ),
         ),
@@ -217,24 +206,26 @@ Playlistデータ取得
     }
     setState(() {_itemsPlayList = list;});
   }
-  Future<void> tapLongPlayListTile(String name ,String path, int fileListNo) async{
+  Future<void> tapLongPlayListTile(int alarmNo,String name ,String path, int fileListNo) async{
 
-
+    //指定したPlayListNoを削除
+    await delPlayList(alarmNo,fileListNo);
     //プレイリストテーブルに登録
-
 
     //トーストで登録された旨を表示
     Fluttertoast.showToast(msg: 'プレイリストから$nameが削除されました');
+
+    //再取得
     init();
   }
 
-  Future<void> delPlayList(int intPlayListMaxNo, int fileListNo, String name, String path) async{
+  Future<void> delPlayList(int intPlayListNo, int intfileListNo) async{
     String dbPath = await getDatabasesPath();
     String query = '';
     String path = p.join(dbPath, 'internal_assets.db');
     Database database = await openDatabase(path, version: 1,);
-
-   // query = 'INSERT INTO playList(no,filelistno,musicname,musicpath,kaku1,kaku2,kaku3,kaku4) values($intPlayListMaxNo,$fileListNo,"$name","$path",null,null,null,null) ';
+    query = 'DELETE From playList where no = $intPlayListNo and filelistno = $intfileListNo';
+    debugPrint('query:$query');
     await database.transaction((txn) async {
       await txn.rawInsert(query);
     });
