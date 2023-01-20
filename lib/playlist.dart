@@ -10,8 +10,8 @@ import 'package:sqflite/sqflite.dart';
 import './const.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-List<Widget> _items = <Widget>[];
-List<Map> mapPlayList = <Map>[];
+List<Widget> _itemsMusicFolder = <Widget>[];
+List<Map> mapMusicFolder = <Map>[];
 
 class playListEditScreen extends StatefulWidget {
   int fileListNo = 0;
@@ -57,7 +57,7 @@ class _playListEditScreenState extends State<playListEditScreen> {
                   children:  <Widget>[
                     Expanded(
                       child: ListView(
-                        children: _items,
+                        children: _itemsMusicFolder,
                       ),
                     ),
                   ],
@@ -75,19 +75,16 @@ class _playListEditScreenState extends State<playListEditScreen> {
 
     Navigator.pop(context);
   }
-  Future<void> getItems() async {
+  Future<void> getitemsMusicFolder() async {
     List<Widget> list = <Widget>[];
     int listNo = 0;
     double titleFont = 25;
     String strMusicName ='';
     String strMusicPath ='';
     int intFileListNo = 0;
-    String strPreSecondText = '';
-    String strTimeText = '';
-    DateTime dtTime = DateTime.now();
 
     int index = 0;
-    for (Map item in mapPlayList) {
+    for (Map item in mapMusicFolder) {
 
       if(item['musicname'].toString().length > 10) {
         titleFont = 15;
@@ -132,7 +129,7 @@ class _playListEditScreenState extends State<playListEditScreen> {
       );
       index++;
     }
-    setState(() {_items = list;});
+    setState(() {_itemsMusicFolder = list;});
   }
   Future<void> _tapTile(String name ,String path, int fileListNo) async{
 
@@ -180,7 +177,7 @@ class _playListEditScreenState extends State<playListEditScreen> {
     // String dbPath = await getDatabasesPath();
     // String path = p.join(dbPath, 'internal_assets.db');
     // Database database = await openDatabase(path, version: 1);
-    // mapPlayList = await database.rawQuery("SELECT * From alarmList order by alarmno");
+    // mapMusicFolder = await database.rawQuery("SELECT * From alarmList order by alarmno");
 
     int no = 0;
   //  Directory appDocDir = await getApplicationDocumentsDirectory();
@@ -211,7 +208,7 @@ class _playListEditScreenState extends State<playListEditScreen> {
     // String? strDir = Dir?.path;
     // debugPrint('Directory:$strDir');
     // var plist = Dir?.listSync();
-    // mapPlayList = [
+    // mapMusicFolder = [
     //   {'No':1, 'filelistno':0,'musicname':'電撃戦隊チェンジマン.mp3','musicpath':'musicpath1'},
     //   {'No':2, 'filelistno':0,'musicname':'超電子バイオマン.mp3','musicpath':'musicpath2'},
     //
@@ -219,7 +216,7 @@ class _playListEditScreenState extends State<playListEditScreen> {
     for( var p in plist! ){
       final reg = RegExp(r'\.mp3');
       if(reg.hasMatch(p.path)) {
-        mapPlayList.add({
+        mapMusicFolder.add({
           'No': no,
           'filelistno': 0,
           'musicname': p.path,
@@ -236,7 +233,7 @@ class _playListEditScreenState extends State<playListEditScreen> {
   void init() async {
     // await  testEditDB();
     await loadList();
-    await getItems();
+    await getitemsMusicFolder();
   }
 
 
