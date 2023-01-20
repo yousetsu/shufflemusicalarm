@@ -144,13 +144,13 @@ MusicFolderデータ取得
 
     return maxNo;
   }
-  Future<void> insPlayList(int intPlayListMaxNo, int fileListNo, String name, String path) async{
+  Future<void> insPlayList(int intPlayListMaxNo, int fileListNo, String name, String musicPath) async{
     String dbPath = await getDatabasesPath();
     String query = '';
     String path = p.join(dbPath, 'internal_assets.db');
     Database database = await openDatabase(path, version: 1,);
 
-    query = 'INSERT INTO playList(no,filelistno,musicname,musicpath,kaku1,kaku2,kaku3,kaku4) values($intPlayListMaxNo,$fileListNo,"$name","$path",null,null,null,null) ';
+    query = 'INSERT INTO playList(no,filelistno,musicname,musicpath,kaku1,kaku2,kaku3,kaku4) values($intPlayListMaxNo,$fileListNo,"$name","$musicPath",null,null,null,null) ';
     await database.transaction((txn) async {
       await txn.rawInsert(query);
     });

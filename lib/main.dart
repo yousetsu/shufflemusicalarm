@@ -6,12 +6,14 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import './const.dart';
 import './alarmdetail.dart';
+import 'package:just_audio/just_audio.dart';
 import './playlist.dart';
 
 List<Widget> _items = <Widget>[];
 List<Map> map_stretchlist = <Map>[];
 int notificationType = 0;
-
+bool testFLG = false;
+late AudioPlayer _player;
 //didpop使う為
 final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
 /*------------------------------------------------------------------
@@ -252,7 +254,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
 
       list.add(
         Card(
-
           margin: const EdgeInsets.fromLTRB(15,0,15,15),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
@@ -265,7 +266,9 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
                 onChanged: (bool? value) {
                   if (value != null) {
                     setState(() {isAlarmOn = value;});
+                    setAlarm(item['alarmno'],isAlarmOn,dtTime,strWeekText,item['playmode']);
                   }},),
+
             title: Text(' $strTimeText ', style:const TextStyle(color: Colors.blue , fontSize: 30) ),
             subtitle:
             Column(
@@ -323,7 +326,60 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     await loadList();
     await getItems();
   }
+//item['alarmno'],isAlarmOn,dtTime,strWeekText,item['playmode']
+  Future<void> setAlarm(int alarmNo, bool isAlarmOn, DateTime alarmTime, String strWeekText, int playMode)  async{
+    int no = 3;
+    debugPrint('setAlarm Start');
+    testFLG = !testFLG;
+    if(testFLG) {
+      debugPrint('スイッチオン');
+      ///PlaylistからNOを取得
 
+
+      ///そのナンバーをランダムで選択
+
+      ///そのナンバーからpath名を取得
+      String musicPath = await getPlayListPath(no);
+      debugPrint('no:$no  path:$musicPath ');
+      ///ここでmusicを鳴らす
+      _player = AudioPlayer();
+      await _player.setLoopMode(LoopMode.all);
+    await _player.setFilePath(musicPath);
+    await _player.play();
+     // playMusic(musicPath);
+
+
+    }else{
+      debugPrint('スイッチオフ');
+      await _player.stop();
+      //音止める
+    }
+    debugPrint('setAlarm END');
+
+  }
+  Future<String>  getPlayListPath(int fileListNo) async {
+    String musicPath = '';
+    String dbPath = await getDatabasesPath();
+    String path = p.join(dbPath, 'internal_assets.db');
+    Database database = await openDatabase(path, version: 1);
+    List<Map> result = await database.rawQuery("SELECT * From playList where no = $fileListNo ");
+    for (Map item in result) {
+      musicPath = (item['musicpath'].toString() != null)?item['musicpath'].toString():'';
+    }
+    return musicPath;
+  }
+  // Future<void> playMusic(Stirng musicPath) async {
+  //   String? strSePath;
+  //   strSePath = await _loadStrSetting('mpath');
+  //   _player = AudioPlayer();
+  //   await _player.setLoopMode(LoopMode.all);
+  //   if(strSePath != null && strSePath != "") {
+  //     await _player.setFilePath(strSePath);
+  //   }else{
+  //     await _player.setAsset('assets/alarm.mp3');
+  //   }
+  //   await _player.play();
+  // }
 }
 
 
