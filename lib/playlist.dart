@@ -181,6 +181,7 @@ Playlistデータ取得
 
     int index = 0;
     for (Map item in mapPlayList) {
+      debugPrint('alarmNo:${item['no']}  name:${item['musicname']} path:${item['musicpath']}');
       list.add(
         Card(
           shape: RoundedRectangleBorder(
@@ -192,8 +193,6 @@ Playlistデータ取得
             selected: intAlarmNo == item['no'],
             onLongPress: () {
               intAlarmNo = item['no'];
-              debugPrint('listNo:$intAlarmNo');
-              debugPrint('itemNo:${item['no']}');
               intFileListNo = fileListNo;  //拡張用
               strMusicName = item['musicname'];
               strMusicPath = item['musicpath'];
@@ -208,11 +207,13 @@ Playlistデータ取得
   }
   Future<void> tapLongPlayListTile(int alarmNo,String name ,String path, int fileListNo) async{
 
-    //指定したPlayListNoを削除
+    ///指定したPlayListNoを削除
     await delPlayList(alarmNo,fileListNo);
-    //プレイリストテーブルに登録
 
-    //トーストで登録された旨を表示
+    ///番号振り直し
+   await updPlayListReNo(fileListNo);
+
+    ///トーストで登録された旨を表示
     Fluttertoast.showToast(msg: 'プレイリストから$nameが削除されました');
 
     //再取得
@@ -229,6 +230,23 @@ Playlistデータ取得
     await database.transaction((txn) async {
       await txn.rawInsert(query);
     });
+  }
+  Future<void> updPlayListReNo(int lcFileListNo) async{
+    //番号順にリスト再取得
+    int reNo = 1;
+    String dbPath = await getDatabasesPath();
+    String query = '';
+    String path = p.join(dbPath, 'internal_assets.db');
+    Database database = await openDatabase(path, version: 1);
+    List<Map> lcMapPlayList = await database.rawQuery("SELECT * From playList where filelistno = $lcFileListNo order by no");
+    //番号を振り直しして更新
+    for (Map item in lcMapPlayList) {
+      query = 'UPDATE playList set no = $reNo where no = ${item['no']} and filelistno = $lcFileListNo';
+      await database.transaction((txn) async {
+        await txn.rawInsert(query);
+      });
+      reNo++;
+    }
   }
   Future<void>  loadPlayList(int fileListNo) async {
     mapPlayList = <Map>[];
