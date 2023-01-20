@@ -147,8 +147,6 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
                 ),
 
                 const Padding(padding: EdgeInsets.all(10)),
-
-
                 ///音楽ファイル選択ボタン
                 SizedBox(
                   width: 200, height: 70,
@@ -172,28 +170,28 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
                       ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
                         onPressed: () {setState(() {monFlg = !monFlg;});},
                         child: Text( '月', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
-                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
-                        onPressed: () {setState(() {monFlg = !monFlg;});},
+                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: tueFlg?Colors.blue:Colors.grey),
+                        onPressed: () {setState(() {tueFlg = !tueFlg;});},
                         child: Text( '火', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
-                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
-                        onPressed: () {setState(() {monFlg = !monFlg;});},
+                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: wedFlg?Colors.blue:Colors.grey),
+                        onPressed: () {setState(() {wedFlg = !wedFlg;});},
                         child: Text( '水', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
-                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
-                        onPressed: () {setState(() {monFlg = !monFlg;});},
+                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: thuFlg?Colors.blue:Colors.grey),
+                        onPressed: () {setState(() {thuFlg = !thuFlg;});},
                         child: Text( '木', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
-                       ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
-                         onPressed: () {setState(() {monFlg = !monFlg;});},
+                       ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: friFlg?Colors.blue:Colors.grey),
+                         onPressed: () {setState(() {friFlg = !friFlg;});},
                          child: Text( '金', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
                     ]
                 ),
         Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children:  <Widget>[
-                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
-                        onPressed: () {setState(() {monFlg = !monFlg;});},
+                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: satFlg?Colors.blue:Colors.grey),
+                        onPressed: () {setState(() {satFlg = !satFlg;});},
                         child: Text( '土', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
-                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
-                        onPressed: () {setState(() {monFlg = !monFlg;});},
+                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: sunFlg?Colors.blue:Colors.grey),
+                        onPressed: () {setState(() {sunFlg = !sunFlg;});},
                         child: Text( '日', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
             ]
         ),

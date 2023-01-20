@@ -353,14 +353,14 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
 
   }
   Future<int>  getPlayListRandomNo(int fileListNo) async {
-    int LcRandomNo = 1;
+    int lcRandomNo = 1;
     int lcMaxNo = 0;
     lcMaxNo = await getPlayListMaxNo(fileListNo);
 
     //ここでランダム範囲を設定(1 以上 lcMaxNo 未満)
-    LcRandomNo = randomIntWithRange(1,lcMaxNo+1);
-    debugPrint('RandomNo:$LcRandomNo');
-    return LcRandomNo;
+    lcRandomNo = randomIntWithRange(1,lcMaxNo+1);
+    debugPrint('RandomNo:$lcRandomNo');
+    return lcRandomNo;
 
   }
   Future<int> getPlayListMaxNo(int fileListNo) async {
