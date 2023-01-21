@@ -24,9 +24,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
   _AlarmDetailScreenState(this.mode,this.no);
 
   final _formTitleKey = GlobalKey<FormState>();
-  final _formPreSecondKey = GlobalKey<FormState>();
   final _textControllerTitle = TextEditingController();
-  final _textControllerPreSecond = TextEditingController();
 
   String title = 'モードなし';
   DateTime _time = DateTime.utc(0, 0, 0);
@@ -73,11 +71,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
               children:  <Widget>[
                 Text('アラームON/OFF',style:TextStyle(fontSize: 25.0,color: Color(0xFF191970))),
                 Switch(value: isAlarmOn, onChanged: (value) {
-                  setState(
-                        () {
-                          isAlarmOn = value;
-                    },
-                  );
+                  setState(() {isAlarmOn = value;},);
                 },),
                 Padding(padding: EdgeInsets.all(10)),
                 ///時間
@@ -232,7 +226,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
     );
   }
   void buttonPressed() async{
-    if (!_formTitleKey.currentState!.validate() || !_formPreSecondKey.currentState!.validate()) {
+    if (!_formTitleKey.currentState!.validate() ) {
       // If the form is valid, display a snackbar. In the real world,
       // you'd often call a server or save the information in a database.
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -283,15 +277,28 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
     String lcTitle = '';
     String lcTime = '';
     int    lcAlarmFlag = 0;
-
+    int intLcMon = 0;
+    int intLcTue = 0;
+    int intLcWed = 0;
+    int intLcThu = 0;
+    int intLcFri = 0;
+    int intLcSat = 0;
+    int intLcSun = 0;
     String dbPath = await getDatabasesPath();
     String path = p.join(dbPath, 'internal_assets.db');
     Database database = await openDatabase(path, version: 1);
     List<Map> result = await database.rawQuery("SELECT * From alarmList where alarmno = $editNo");
     for (Map item in result) {
-      lcTitle = item['title'];
-      lcTime = item['time'];
+      lcTitle = item['title'].toString();
+      lcTime = item['time'].toString();
       lcAlarmFlag = item['alarmflg'];
+      intLcMon = item['mon'];
+      intLcTue = item['tue'];
+      intLcWed = item['wed'];
+      intLcThu = item['thu'];
+      intLcFri = item['fri'];
+      intLcSat = item['sat'];
+      intLcSun = item['sun'];
     }
     setState(() {
       _textControllerTitle.text = lcTitle;
@@ -301,41 +308,63 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
        }else{
          isAlarmOn = true;
        }
-
-   //   _textControllerPreSecond.text = lcPreSecond.toString();
+       monFlg = (intLcMon == cnsFlgOn)?true:false;
+       tueFlg = (intLcTue == cnsFlgOn)?true:false;
+       wedFlg = (intLcWed == cnsFlgOn)?true:false;
+       thuFlg = (intLcThu == cnsFlgOn)?true:false;
+       friFlg = (intLcFri == cnsFlgOn)?true:false;
+       satFlg = (intLcSat == cnsFlgOn)?true:false;
+       sunFlg = (intLcSun == cnsFlgOn)?true:false;
 
     });
-
   }
   Future<void>  insertStretchData(int lcNo)async{
     int lcOtherSide = 0 ;
     String dbPath = await getDatabasesPath();
     String query = '';
     String path = p.join(dbPath, 'internal_assets.db');
-    int preSecond = 0;
     Database database = await openDatabase(path, version: 1,);
 
-
-    //準備時間がnullだったらゼロにする
-    preSecond = (_textControllerPreSecond.text.isEmpty)? 0:int.parse(_textControllerPreSecond.text);
-
-    query = 'INSERT INTO stretchlist(no,title,time,otherside,presecond,kaku1,kaku2,kaku3,kaku4) values($lcNo,"${_textControllerTitle.text}","${_time.toString()}",$lcOtherSide,"$preSecond",null,null,null,null) ';
+  //  query = 'INSERT INTO stretchlist(no,title,time,otherside,presecond,kaku1,kaku2,kaku3,kaku4) values($lcNo,"${_textControllerTitle.text}","${_time.toString()}",$lcOtherSide,"$preSecond",null,null,null,null) ';
     await database.transaction((txn) async {
       await txn.rawInsert(query);
     });
   }
   Future<void>  updateAlarmData(int lcNo)async{
     int lcAlarmFlg = 0 ;
-    int lcPreSecond = 0 ;
     String dbPath = await getDatabasesPath();
     String query = '';
     String path = p.join(dbPath, 'internal_assets.db');
     Database database = await openDatabase(path, version: 1,);
 
-    //オンにした音楽鳴らす
+    int intLcMon = 0;
+    int intLcTue = 0;
+    int intLcWed = 0;
+    int intLcThu = 0;
+    int intLcFri = 0;
+    int intLcSat = 0;
+    int intLcSun = 0;
 
-    lcPreSecond =  int.parse(_textControllerPreSecond.text);
-    query = "UPDATE alarmList set  time = '${_time.toString()}',title = '${_textControllerTitle.text}',alarmflg = $lcAlarmFlg, presecond = ${lcPreSecond} where alarmno = $lcNo ";
+    //オンにした音楽鳴らす
+    lcAlarmFlg =  isAlarmOn?cnsFlgOn:cnsFlgOff;
+    intLcMon = monFlg?cnsFlgOn:cnsFlgOff;
+    intLcTue = tueFlg?cnsFlgOn:cnsFlgOff;
+    intLcWed = wedFlg?cnsFlgOn:cnsFlgOff;
+    intLcThu = thuFlg?cnsFlgOn:cnsFlgOff;
+    intLcFri = friFlg?cnsFlgOn:cnsFlgOff;
+    intLcSat = satFlg?cnsFlgOn:cnsFlgOff;
+    intLcSun = sunFlg?cnsFlgOn:cnsFlgOff;
+
+    query = 'UPDATE alarmList set '
+          + 'time = "${_time.toString()}",title = "${_textControllerTitle.text}",alarmflg = $lcAlarmFlg, filelistno = 0, '
+          + 'mon = $intLcMon,'
+          + 'tue = $intLcTue,'
+          + 'wed = $intLcWed,'
+          + 'thu = $intLcThu,'
+          + 'fri = $intLcFri,'
+          + 'sat = $intLcSat,'
+          + 'sun = $intLcSun'
+          +' where alarmno = $lcNo';
     await database.transaction((txn) async {
       await txn.rawInsert(query);
     });

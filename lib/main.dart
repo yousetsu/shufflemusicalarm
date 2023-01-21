@@ -209,7 +209,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
       }
 
       bool alarmFlg = false;
-      if (item['alarmflg'] == cnsAlarmFlgOn){
+      if (item['alarmflg'] == cnsFlgOn){
         alarmFlg = true;
       }
       list.add(
@@ -246,9 +246,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
               },
               onSelected: (String list) {
                 switch (list) {
-                  case '編集':
-                    updAlarmList(item['alarmno']);
-                    break;
                   case '削除':
                     delAlarmList(item['alarmno']);
                     break;
@@ -256,7 +253,9 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
               },
             ),
             selected: alarmListNo == item['alarmno'],
-            onTap: () {//拡張用
+            onTap: () {
+              alarmListNo= item['alarmno'];
+              debugPrint('ListNo:$alarmListNo');
               _tapTile(alarmListNo);
             },
           ),

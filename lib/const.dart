@@ -4,8 +4,8 @@ const int cnsOtherSideOn = 1;
 const String cnsAlarmDetailScreenIns = 'ins';
 const String cnsAlarmDetailScreenUpd = 'upd';
 
-const int cnsAlarmFlgOff = 0; ///アラームoff
-const int cnsAlarmFlgOn = 1; ///アラームon
+const int cnsFlgOff = 0; ///アラームoff
+const int cnsFlgOn = 1; ///アラームon
 
 
 const int cnsCountStateReady                 = 0; ///準備
