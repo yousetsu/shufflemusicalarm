@@ -4,10 +4,8 @@ const int cnsOtherSideOn = 1;
 const String cnsAlarmDetailScreenIns = 'ins';
 const String cnsAlarmDetailScreenUpd = 'upd';
 
-const int cnsNotificationTypeNo = 0; ///なし
-const int cnsNotificationTypeVib = 1; ///バイブレーション
-const int cnsNotificationTypeSE = 2; ///音
-const int cnsNotificationTypeVoice = 3; ///声
+const int cnsAlarmFlgOff = 0; ///アラームoff
+const int cnsAlarmFlgOn = 1; ///アラームon
 
 
 const int cnsCountStateReady                 = 0; ///準備

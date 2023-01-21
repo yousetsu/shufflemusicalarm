@@ -39,6 +39,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
   bool friFlg = false;
   bool satFlg = false;
   bool sunFlg = false;
+  bool isAlarmOn = false;
 
   @override
   void initState() {
@@ -70,6 +71,14 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
           child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children:  <Widget>[
+                Text('アラームON/OFF',style:TextStyle(fontSize: 25.0,color: Color(0xFF191970))),
+                Switch(value: isAlarmOn, onChanged: (value) {
+                  setState(
+                        () {
+                          isAlarmOn = value;
+                    },
+                  );
+                },),
                 Padding(padding: EdgeInsets.all(10)),
                 ///時間
                 Row(
@@ -280,7 +289,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
 
     String lcTitle = '';
     String lcTime = '';
-    int    lcOtherSideFlag = 0;
+    int    lcAlarmFlag = 0;
 
     String dbPath = await getDatabasesPath();
     String path = p.join(dbPath, 'internal_assets.db');
@@ -289,16 +298,16 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
     for (Map item in result) {
       lcTitle = item['title'];
       lcTime = item['time'];
-      // lcOtherSideFlag = item['otherside'];
+      lcAlarmFlag = item['alarmflg'];
     }
     setState(() {
       _textControllerTitle.text = lcTitle;
       _time = DateTime.parse(lcTime);
-      // if(lcOtherSideFlag == cnsOtherSideOff){
-      //   _otherSideFlag = false;
-      // }else{
-      //   _otherSideFlag = true;
-      // }
+       if(lcAlarmFlag == cnsOtherSideOff){
+         isAlarmOn = false;
+       }else{
+         isAlarmOn = true;
+       }
 
    //   _textControllerPreSecond.text = lcPreSecond.toString();
 

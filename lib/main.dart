@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
@@ -10,8 +11,8 @@ import 'dart:math' as math;
 import 'package:just_audio/just_audio.dart';
 import './playlist.dart';
 
-List<Widget> _items = <Widget>[];
-List<Map> map_stretchlist = <Map>[];
+List<Widget> listWedgetitems = <Widget>[];
+List<Map> mapAlarmList = <Map>[];
 int notificationType = 0;
 bool testFLG = false;
 late AudioPlayer _player;
@@ -79,7 +80,8 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> with RouteAware {
-
+  bool isAlarmOn = false;
+  Key? listViewKey;
   @override
   void initState() {
     super.initState();
@@ -114,73 +116,36 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
         children:  <Widget>[
           const Padding(padding: EdgeInsets.all(10)),
           Expanded(
-            child: ReorderableListView(
-              onReorder: (int oldIndex, int newIndex) {
-                setState(() {
-                  if (oldIndex < newIndex) {
-                    newIndex -= 1;
-                  }
-                  Widget itemDummy = _items.removeAt(oldIndex);
-                  _items.insert(newIndex, itemDummy);
-                });
-                //入れ替えロジック
-                changeList(oldIndex+1,newIndex+1);
-              },
-              children: _items,
+            child: ListView(
+              key: listViewKey,
+              children: listWedgetitems, //List<Widget>
             ),
           ),
         ],
       ),
 
       floatingActionButton: FloatingActionButton(
-        onPressed: insertStretch,
+        onPressed: insertAlarmList,
         tooltip: '登録',
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatt
 
     );
   }
-  void changeList(int oldDbNo, int newDbNo) async{
-
-    await changeListUpd(oldDbNo,newDbNo);
-    await loadList();
-    await getItems();
-  }
-  Future<void> changeListUpd(int oldDbNo, int newDbNo) async{
-
-    ///oldを -1にする
-    await updListNo(oldDbNo,-1);
-    ///newをoldにする
-    await updListNo(newDbNo,oldDbNo);
-    /// -1をnewにする
-    await updListNo(-1,newDbNo);
-
-  }
-  Future<void> updListNo( int whereNo ,int updNo)async{
-    String dbPath = await getDatabasesPath();
-    String query = '';
-    String path = p.join(dbPath, 'internal_assets.db');
-    Database database = await openDatabase(path, version: 1,);
-    query = ' UPDATE alarmList set alarmno = $updNo where alarmno = $whereNo';
-    await database.transaction((txn) async {
-      await txn.rawInsert(query);
-    });
-  }
-
-  void insertStretch() {
+  void insertAlarmList() {
     // Navigator.push(
     //   context,
     //   MaterialPageRoute(builder: (context) => StretchScreen(cnsStretchScreenIns,-1)),
     // );
   }
-  void updStretch(int lcNo){
+  void updAlarmList(int lcNo){
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => AlarmDetailScreen(cnsAlarmDetailScreenUpd,lcNo)),
     );
   }
 
-  Future<void> delStretch(int lcNo) async{
+  Future<void> delAlarmList(int lcNo) async{
 
     await delStretchDB(lcNo);
     await loadList();
@@ -199,28 +164,18 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
 
   Future<void> getItems() async {
     List<Widget> list = <Widget>[];
-    int listNo = 0;
+    int alarmListNo = 0;
     double titleFont = 25;
-    String listTitle ='';
-    String listTime ='';
-    int listOtherSide = 0;
     String strWeekText = '';
     String strTimeText = '';
     DateTime dtTime = DateTime.now();
-    int listPreSecond = 0;
-    final lists = ['編集', '削除'];
-    var isAlarmOn = false;
+    final lists = ['削除'];
+
     int index = 0;
-    for (Map item in map_stretchlist) {
+    for (Map item in mapAlarmList) {
       //反対側ありなし判定
       dtTime = DateTime.parse(item['time']);
       strTimeText = '${dtTime.hour.toString().padLeft(2,'0')}:${dtTime.minute.toString().padLeft(2,'0')}';
-      // if (item['presecond'] > 0) {
-      //   strPreSecondText = '　準備：${item['presecond'].toString()}秒';
-      // }else{
-      //   strPreSecondText = '';
-      // }
-      int weekcnt = 0;
       if(item['mon'] == 1) {
         strWeekText = '$strWeekText月';
       }
@@ -253,6 +208,10 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
         titleFont = 15;
       }
 
+      bool alarmFlg = false;
+      if (item['alarmflg'] == cnsAlarmFlgOn){
+        alarmFlg = true;
+      }
       list.add(
         Card(
           margin: const EdgeInsets.fromLTRB(15,0,15,15),
@@ -262,14 +221,11 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
           key: Key('$index'),
           child: ListTile(
             contentPadding: const EdgeInsets.all(10),
-              leading: Switch(
-                value: isAlarmOn,
-                onChanged: (bool? value) {
-                  if (value != null) {
-                    setState(() {isAlarmOn = value;});
-                    setAlarm(item['alarmno'],isAlarmOn,dtTime,strWeekText,item['playmode'],item['filelistno']);
-                  }},),
-
+            leading: Column(children:  <Widget>[
+              Icon(Icons.alarm,size: 25,color: alarmFlg?Colors.blue:Colors.grey),
+              Text(alarmFlg?'ON':'OFF', style:const TextStyle(color: Colors.grey , fontSize: 10)),
+              ]
+            ),
             title: Text(' $strTimeText ', style:const TextStyle(color: Colors.blue , fontSize: 30) ),
             subtitle:
             Column(
@@ -291,22 +247,41 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
               onSelected: (String list) {
                 switch (list) {
                   case '編集':
-                    updStretch(item['alarmno']);
+                    updAlarmList(item['alarmno']);
                     break;
                   case '削除':
-                    delStretch(item['alarmno']);
+                    delAlarmList(item['alarmno']);
                     break;
                 }
               },
             ),
-            selected: listNo == item['alarmno'],
+            selected: alarmListNo == item['alarmno'],
+            onTap: () {//拡張用
+              _tapTile(alarmListNo);
+            },
           ),
         ),
       );
       index++;
     }
-    setState(() {_items = list;});
+    setState(() {listWedgetitems = list;});
   }
+
+  Future<void> _tapTile(int alarmListNo) async{
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AlarmDetailScreen(cnsAlarmDetailScreenUpd,alarmListNo)),
+    );
+  }
+void switchChange(bool value) {
+   // debugPrint('index:$index');
+    setState(() {
+     // debugPrint('list:${listWedgetitems[0].debugDescribeChildren().toString()}');
+      isAlarmOn = !value;
+    });
+    //debugPrint('Switch:$isAlarmOn');
+    //   setAlarm(item['alarmno'],isAlarmOn,dtTime,strWeekText,item['playmode'],item['filelistno']);
+}
   /*------------------------------------------------------------------
 第一画面ロード
  -------------------------------------------------------------------*/
@@ -314,7 +289,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     String dbPath = await getDatabasesPath();
     String path = p.join(dbPath, 'internal_assets.db');
     Database database = await openDatabase(path, version: 1);
-    map_stretchlist = await database.rawQuery("SELECT * From alarmList order by alarmno");
+    mapAlarmList = await database.rawQuery("SELECT * From alarmList order by alarmno");
   }
   /*------------------------------------------------------------------
 初期処理
@@ -324,7 +299,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     await loadList();
     await getItems();
   }
-//item['alarmno'],isAlarmOn,dtTime,strWeekText,item['playmode']
   Future<void> setAlarm(int alarmNo, bool isAlarmOn, DateTime alarmTime, String strWeekText, int playMode,int filelistno)  async{
     int no = 0;
     debugPrint('setAlarm Start');
@@ -333,8 +307,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
       debugPrint('スイッチオン');
       ///PlaylistからNOを取得し、ランダムで1つ返す
       no = await getPlayListRandomNo(filelistno);
-
-
       ///そのナンバーからpath名を取得
       String musicPath = await getPlayListPath(no);
       debugPrint('no:$no  path:$musicPath ');
