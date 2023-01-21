@@ -241,13 +241,6 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
       ));
       return;
     }
-    if (_time.minute == 0 && _time.second == 0){
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('必ず時間（分秒）を設定してください。'),
-        backgroundColor: Colors.red,
-      ));
-      return;
-    }
     int intMax = 0;
     switch (mode) {
     //登録モード
@@ -257,7 +250,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
         break;
     //編集モード
       case cnsAlarmDetailScreenUpd:
-        await updateStretchData(no);
+        await updateAlarmData(no);
         break;
     }
 
@@ -331,16 +324,18 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
       await txn.rawInsert(query);
     });
   }
-  Future<void>  updateStretchData(int lcNo)async{
-    int lcOtherSide = 0 ;
+  Future<void>  updateAlarmData(int lcNo)async{
+    int lcAlarmFlg = 0 ;
     int lcPreSecond = 0 ;
     String dbPath = await getDatabasesPath();
     String query = '';
     String path = p.join(dbPath, 'internal_assets.db');
     Database database = await openDatabase(path, version: 1,);
 
+    //オンにした音楽鳴らす
+
     lcPreSecond =  int.parse(_textControllerPreSecond.text);
-    query = "UPDATE stretchlist set title = '${_textControllerTitle.text}', time = '${_time.toString()}',otherside = $lcOtherSide, presecond = ${lcPreSecond} where no = $lcNo ";
+    query = "UPDATE alarmList set  time = '${_time.toString()}',title = '${_textControllerTitle.text}',alarmflg = $lcAlarmFlg, presecond = ${lcPreSecond} where alarmno = $lcNo ";
     await database.transaction((txn) async {
       await txn.rawInsert(query);
     });
