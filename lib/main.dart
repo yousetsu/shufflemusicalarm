@@ -7,15 +7,21 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import './const.dart';
 import './alarmdetail.dart';
+import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'dart:math' as math;
 import 'package:just_audio/just_audio.dart';
 import './playlist.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 
 List<Widget> listWedgetitems = <Widget>[];
 List<Map> mapAlarmList = <Map>[];
 int notificationType = 0;
 bool testFLG = false;
-late AudioPlayer _player;
+///android_alarm_manager_plusで必要な定義
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 //didpop使う為
 final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
 /*------------------------------------------------------------------
@@ -46,9 +52,39 @@ Future<void> firstRun() async {
     //print("Opening existing database");
   }
 }
+
 void main() async{
-  //SQLfliteで必要？
+  //SQLflite + android_alarm_manager_plusで必要
   WidgetsFlutterBinding.ensureInitialized();
+
+  ///android_alarm_manager_plusで必要
+  await AndroidAlarmManager.initialize();
+
+  ///android_alarm_manager_plusで必要な初期設定
+  //Android13だと通知を要求するか聞いてくれるらしい？
+  flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestPermission();
+
+
+  //時刻起動する場合のタイムゾーン設定
+  // tz.initializeTimeZones();
+  // final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
+  // tz.setLocalLocation(tz.getLocation(timeZoneName));
+
+  //時間起動通知される
+  // await flutterLocalNotificationsPlugin.zonedSchedule(
+  //     0,
+  //     'scheduled title',
+  //     'scheduled body',
+  //     tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5)),
+  //     const NotificationDetails(
+  //         android: AndroidNotificationDetails(
+  //             'your channel id', 'your channel name',
+  //             channelDescription: 'your channel description')),
+  //     androidAllowWhileIdle: true,
+  //     uiLocalNotificationDateInterpretation:
+  //     UILocalNotificationDateInterpretation.absoluteTime);
+
+
   await firstRun();
   runApp(const MyApp());
 }
@@ -86,6 +122,8 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
   void initState() {
     super.initState();
     init();
+
+
   }
   @override
   void didChangeDependencies() { // 遷移時に呼ばれる関数
@@ -132,6 +170,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
 
     );
   }
+
   void insertAlarmList() {
     // Navigator.push(
     //   context,
@@ -265,22 +304,12 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     }
     setState(() {listWedgetitems = list;});
   }
-
   Future<void> _tapTile(int alarmListNo) async{
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => AlarmDetailScreen(cnsAlarmDetailScreenUpd,alarmListNo)),
     );
   }
-void switchChange(bool value) {
-   // debugPrint('index:$index');
-    setState(() {
-     // debugPrint('list:${listWedgetitems[0].debugDescribeChildren().toString()}');
-      isAlarmOn = !value;
-    });
-    //debugPrint('Switch:$isAlarmOn');
-    //   setAlarm(item['alarmno'],isAlarmOn,dtTime,strWeekText,item['playmode'],item['filelistno']);
-}
   /*------------------------------------------------------------------
 第一画面ロード
  -------------------------------------------------------------------*/
@@ -289,6 +318,8 @@ void switchChange(bool value) {
     String path = p.join(dbPath, 'internal_assets.db');
     Database database = await openDatabase(path, version: 1);
     mapAlarmList = await database.rawQuery("SELECT * From alarmList order by alarmno");
+
+
   }
   /*------------------------------------------------------------------
 初期処理
@@ -298,83 +329,7 @@ void switchChange(bool value) {
     await loadList();
     await getItems();
   }
-  Future<void> setAlarm(int alarmNo, bool isAlarmOn, DateTime alarmTime, String strWeekText, int playMode,int filelistno)  async{
-    int no = 0;
-    debugPrint('setAlarm Start');
-    testFLG = !testFLG;
-    if(testFLG) {
-      debugPrint('スイッチオン');
-      ///PlaylistからNOを取得し、ランダムで1つ返す
-      no = await getPlayListRandomNo(filelistno);
-      ///そのナンバーからpath名を取得
-      String musicPath = await getPlayListPath(no);
-      debugPrint('no:$no  path:$musicPath ');
-      ///ここでmusicを鳴らす
-      _player = AudioPlayer();
-      await _player.setLoopMode(LoopMode.all);
-    await _player.setFilePath(musicPath);
-    await _player.play();
-     // playMusic(musicPath);
-    }else{
-      debugPrint('スイッチオフ');
-      await _player.stop();
-      //音止める
-    }
-    debugPrint('setAlarm END');
 
-  }
-  Future<int>  getPlayListRandomNo(int fileListNo) async {
-    int lcRandomNo = 1;
-    int lcMaxNo = 0;
-    lcMaxNo = await getPlayListMaxNo(fileListNo);
-
-    //ここでランダム範囲を設定(1 以上 lcMaxNo 未満)
-    lcRandomNo = randomIntWithRange(1,lcMaxNo+1);
-    debugPrint('RandomNo:$lcRandomNo');
-    return lcRandomNo;
-
-  }
-  Future<int> getPlayListMaxNo(int fileListNo) async {
-
-    int lcMaxNo = 0;
-    String dbPath = await getDatabasesPath();
-    String path = p.join(dbPath, 'internal_assets.db');
-    Database database = await openDatabase(path, version: 1);
-    List<Map> lcMapPlayList = await database.rawQuery("SELECT max(no) maxNo From playList where filelistno = $fileListNo");
-    for(Map item in lcMapPlayList){
-      lcMaxNo = (item['maxNo'] != null)?item['maxNo']:0;
-    }
-    debugPrint('MaxNo:$lcMaxNo');
-    return lcMaxNo;
-  }
-  int randomIntWithRange(int min, int max) {
-    int value =  math.Random().nextInt(max - min);
-    return value + min;
-  }
-
-  Future<String>  getPlayListPath(int fileListNo) async {
-    String musicPath = '';
-    String dbPath = await getDatabasesPath();
-    String path = p.join(dbPath, 'internal_assets.db');
-    Database database = await openDatabase(path, version: 1);
-    List<Map> result = await database.rawQuery("SELECT * From playList where no = $fileListNo ");
-    for (Map item in result) {
-      musicPath = (item['musicpath'].toString() != null)?item['musicpath'].toString():'';
-    }
-    return musicPath;
-  }
-  // Future<void> playMusic(Stirng musicPath) async {
-  //   String? strSePath;
-  //   strSePath = await _loadStrSetting('mpath');
-  //   _player = AudioPlayer();
-  //   await _player.setLoopMode(LoopMode.all);
-  //   if(strSePath != null && strSePath != "") {
-  //     await _player.setFilePath(strSePath);
-  //   }else{
-  //     await _player.setAsset('assets/alarm.mp3');
-  //   }
-  //   await _player.play();
-  // }
 }
 
 

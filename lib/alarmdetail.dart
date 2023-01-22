@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_picker/flutter_picker.dart';
@@ -7,13 +5,19 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import './const.dart';
 import './playlist.dart';
+import 'dart:math' as math;
+import 'package:just_audio/just_audio.dart';
+import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import './main.dart';
+
+int alarmID = 8765;
+late AudioPlayer _player;
 
 class AlarmDetailScreen extends StatefulWidget {
   String mode = '';
   int no = 0;
   AlarmDetailScreen(this.mode,this.no);
-
-  //const AlarmDetailScreen({Key? key}) : super(key: key); //コンストラクタ
 
   @override
   State<AlarmDetailScreen> createState() =>  _AlarmDetailScreenState(mode,no);
@@ -22,14 +26,11 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
   String mode = '';
   int no = 0;
   _AlarmDetailScreenState(this.mode,this.no);
-
   final _formTitleKey = GlobalKey<FormState>();
   final _textControllerTitle = TextEditingController();
-
   String title = 'モードなし';
   DateTime _time = DateTime.utc(0, 0, 0);
   String buttonName = '登録';
-
   bool monFlg = false;
   bool tueFlg = false;
   bool wedFlg = false;
@@ -38,60 +39,41 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
   bool satFlg = false;
   bool sunFlg = false;
   bool isAlarmOn = false;
-
   @override
   void initState() {
     super.initState();
     init();
-
   }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title:  Text(title),backgroundColor: const Color(0xFF6495ed),),
       body: SingleChildScrollView(
-
         child: Container(
           margin: const EdgeInsets.fromLTRB(15,50,15,5),
           //padding: const EdgeInsets.all(5.0),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black12,width: 2),
-            borderRadius: BorderRadius.circular(20),
+          decoration: BoxDecoration(border: Border.all(color: Colors.black12,width: 2), borderRadius: BorderRadius.circular(20),
             //   color: Colors.lightBlueAccent,
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.white,
-                  blurRadius: 10.0,
-                  spreadRadius: 1.0,
-                  offset: Offset(5, 5))
-            ],
+            boxShadow: [BoxShadow(color: Colors.white, blurRadius: 10.0, spreadRadius: 1.0, offset: Offset(5, 5))],
           ),
           child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children:  <Widget>[
-                Text('アラームON/OFF',style:TextStyle(fontSize: 25.0,color: Color(0xFF191970))),
-                Switch(value: isAlarmOn, onChanged: (value) {
-                  setState(() {isAlarmOn = value;},);
-                },),
+                Text('アラームON/OFF',style:TextStyle(fontSize: 20.0,color: Color(0xFF191970))),
+                Switch(value: isAlarmOn, onChanged: switchChange),
                 Padding(padding: EdgeInsets.all(10)),
                 ///時間
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Row(mainAxisAlignment: MainAxisAlignment.center,
                   children: const <Widget>[
                     Icon(Icons.timer,size: 25,color: Colors.blue),
-                    Text('時間',style:TextStyle(fontSize: 25.0,color: Color(0xFF191970))),
-                  ],
-                ),
-                const Padding(padding: EdgeInsets.all(10)),
-
+                    Text('時間',style:TextStyle(fontSize: 20.0,color: Color(0xFF191970))),
+                  ],),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
                     backgroundColor: Colors.lightBlueAccent,
                     padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20),),),
                   onPressed: () async {
                     Picker(
                         adapter: DateTimePickerAdapter(
@@ -100,9 +82,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
                             customColumnType: [3, 4]),
                         title: const Text("Select Time"),
                         onConfirm: (Picker picker, List value) {
-                          setState(() => {
-                            _time = DateTime.utc(2016, 5, 1, value[0], value[1],0),
-                          });
+                          setState(() => {_time = DateTime.utc(2016, 5, 1, value[0], value[1],0),});
                         },
                         onSelect: (Picker picker, int index, List<int> selected){
                           _time = DateTime.utc(2016, 5, 1, selected[0], selected[1],0);
@@ -112,108 +92,58 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
                   child: Text('${_time.hour.toString().padLeft(2,'0')}:${_time.minute.toString().padLeft(2,'0')}', style: const TextStyle(fontSize: 35),),
                 ),
                 Padding(padding: EdgeInsets.all(10)),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children:  <Widget>[
-                    Icon(Icons.label,size: 25,color: Colors.blue),
-                    Text('タイトル',style:TextStyle(fontSize: 25.0,color: Color(0xFF191970))),
-                  ],),
-
-                Container(
-                  padding: const EdgeInsets.all(5.0),
-                  alignment: Alignment.bottomCenter,
-                  width: 300.0,
-                  height: 70,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.lightBlueAccent),
-                    borderRadius: BorderRadius.circular(20),
-                    color: Colors.lightBlueAccent,
-                  ),
-                  child:Form(
-                    key: _formTitleKey,
-                    child: TextFormField(
-                      controller: _textControllerTitle,
-                      validator: (value) {
-                        if (value == null  || value.isEmpty) {
-                          return '必ず何か入力してください。';
-                        }
-                        return null;
-                      },
-                      decoration: const InputDecoration(hintText: "タイトルを入力してください"),
-                      style: const TextStyle(fontSize: 20, color: Colors.white,),
-                      textAlign: TextAlign.center,
-                      onFieldSubmitted: (String value){
-                      },
-                      maxLength: 20,
-                    ),
-                  ),
-                ),
-
-                const Padding(padding: EdgeInsets.all(10)),
-                ///音楽ファイル選択ボタン
-                SizedBox(
-                  width: 200, height: 70,
-                  child: ElevatedButton(
-                    onPressed: musicSelButtonPressed,
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.blue
-                      , elevation: 16
-                      ,shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    ),
-                    child: Text( '音楽ファイル選択', style:  TextStyle(fontSize: 20.0, color: Colors.white,),),
-                  ),
-                ),
-                Text('曜日',style:TextStyle(fontSize: 25.0,color: Color(0xFF191970))),
-
+                Text('曜日',style:TextStyle(fontSize: 20.0,color: Color(0xFF191970))),
                 Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children:  <Widget>[
-                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
+                      SizedBox(width:50, height:50,
+                      child:ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: monFlg?Colors.blue:Colors.grey),
                         onPressed: () {setState(() {monFlg = !monFlg;});},
-                        child: Text( '月', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
-                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: tueFlg?Colors.blue:Colors.grey),
+                        child: Text('月', style: TextStyle(fontSize: 15.0, color: Colors.white,),),),
+                      ),
+                      SizedBox(width:50, height:50,
+                        child:ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: tueFlg?Colors.blue:Colors.grey),
                         onPressed: () {setState(() {tueFlg = !tueFlg;});},
                         child: Text( '火', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
+                      ),
                       ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: wedFlg?Colors.blue:Colors.grey),
                         onPressed: () {setState(() {wedFlg = !wedFlg;});},
-                        child: Text( '水', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
+                        child: Text( '水', style:  TextStyle(fontSize: 10.0, color: Colors.white,),),),
                       ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: thuFlg?Colors.blue:Colors.grey),
                         onPressed: () {setState(() {thuFlg = !thuFlg;});},
-                        child: Text( '木', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
-                       ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: friFlg?Colors.blue:Colors.grey),
-                         onPressed: () {setState(() {friFlg = !friFlg;});},
-                         child: Text( '金', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
+                        child: Text( '木', style:  TextStyle(fontSize: 10.0, color: Colors.white,),),),
+                      ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: friFlg?Colors.blue:Colors.grey),
+                        onPressed: () {setState(() {friFlg = !friFlg;});},
+                        child: Text( '金', style:  TextStyle(fontSize: 10.0, color: Colors.white,),),),
                     ]
                 ),
-        Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children:  <Widget>[
+                Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children:  <Widget>[
                       ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: satFlg?Colors.blue:Colors.grey),
                         onPressed: () {setState(() {satFlg = !satFlg;});},
                         child: Text( '土', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
                       ElevatedButton(style: ElevatedButton.styleFrom(shape: CircleBorder(),backgroundColor: sunFlg?Colors.blue:Colors.grey),
                         onPressed: () {setState(() {sunFlg = !sunFlg;});},
                         child: Text( '日', style:  TextStyle(fontSize: 15.0, color: Colors.white,),),),
-            ]
-        ),
-
-                Text('再生モード',style:TextStyle(fontSize: 25.0,color: Color(0xFF191970))),
-
-                Padding(padding: EdgeInsets.all(10)),
-                ///保存ボタン
+                    ]),
+                const Padding(padding: EdgeInsets.all(10)),
+                ///音楽ファイル選択ボタン
                 SizedBox(
                   width: 200, height: 70,
                   child: ElevatedButton(
+                    onPressed: musicSelButtonPressed,
+                    style: ElevatedButton.styleFrom(foregroundColor: Colors.blue, elevation: 16,shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20),),),
+                    child: Text( '音楽ファイル選択', style:  TextStyle(fontSize: 20.0, color: Colors.white,),),
+                  ),
+                ),
+               // Text('再生モード',style:TextStyle(fontSize: 20.0,color: Color(0xFF191970))),
+                Padding(padding: EdgeInsets.all(10)),
+                ///保存ボタン
+                SizedBox(width: 200, height: 70,
+                  child: ElevatedButton(
                     onPressed: buttonPressed,
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.blue
-                      , elevation: 16
-                      ,shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    ),
+                    style: ElevatedButton.styleFrom(foregroundColor: Colors.blue, elevation: 16,shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20),),),
                     child: Text( buttonName, style:  TextStyle(fontSize: 30.0, color: Colors.white,),),
                   ),
                 ),
@@ -222,24 +152,19 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
           ),
         ),
       ),
-
     );
   }
+  void switchChange(value){
+    setState(() {isAlarmOn = value;},);
+    setAlarm();
+  }
   void buttonPressed() async{
-    if (!_formTitleKey.currentState!.validate() ) {
-      // If the form is valid, display a snackbar. In the real world,
-      // you'd often call a server or save the information in a database.
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('入力内容を見直してください'),
-        backgroundColor: Colors.red,
-      ));
-      return;
-    }
+
     int intMax = 0;
     switch (mode) {
     //登録モード
       case cnsAlarmDetailScreenIns:
-        intMax =  await getMaxStretchNo();
+       // intMax =  await getMaxStretchNo();
         await insertStretchData(intMax+1);
         break;
     //編集モード
@@ -247,7 +172,6 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
         await updateAlarmData(no);
         break;
     }
-
     Navigator.pop(context);
   }
   void musicSelButtonPressed() async{
@@ -273,7 +197,6 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
     }
   }
   void loadEditData(int editNo) async{
-
     String lcTitle = '';
     String lcTime = '';
     int    lcAlarmFlag = 0;
@@ -315,7 +238,6 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
        friFlg = (intLcFri == cnsFlgOn)?true:false;
        satFlg = (intLcSat == cnsFlgOn)?true:false;
        sunFlg = (intLcSun == cnsFlgOn)?true:false;
-
     });
   }
   Future<void>  insertStretchData(int lcNo)async{
@@ -369,16 +291,128 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
       await txn.rawInsert(query);
     });
   }
-  Future<int>  getMaxStretchNo() async{
-    int lcMaxNo = 0;
-    String dbPath = await getDatabasesPath();
-    String path = p.join(dbPath, 'internal_assets.db');
-    Database database = await openDatabase(path, version: 1,);
-    List<Map> result = await database.rawQuery("SELECT MAX(no) no From stretchlist");
-    for (Map item in result) {
-      lcMaxNo = item['no'];
+   void onDidReceiveNotificationResponse(NotificationResponse notificationResponse) async {
+    final String? payload = notificationResponse.payload;
+    if (notificationResponse.payload != null) {
+      debugPrint('notification payload: $payload');
     }
-    return lcMaxNo;
+    showDialog(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+          title:  Text('アラーム'),
+          content: Text('アラーム名'),
+          actions: <Widget>[TextButton(child: Text('stop'), onPressed: () => Navigator.pop<String>(context, 'stop')),],));
+  }
+  Future<void> setAlarm()  async{
+    if(isAlarmOn) {
+      debugPrint('alarmSet');
+
+      await AndroidAlarmManager.oneShot(const Duration(seconds: 5), alarmID, playSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+    }else {
+      debugPrint('alarmStop');
+      await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+    }
   }
 
+  @pragma('vm:entry-point')
+  static Future<void> playSound() async{
+    int playNo = 0;
+    debugPrint('スタート！');
+    //OSごとの通知バーの表示分定義(今はandoridのみ)
+    // 通知バーに出すアイコンの設定
+    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    //OSごとに初期化をする(今はandroidのみ)
+    final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
+
+    //通知バーをタップしたら飛ぶメソッドを定義する
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings, onDidReceiveNotificationResponse: onDidReceiveNotificationResponse);
+
+    //通知バーの表示分定義(andorid分)
+    const AndroidNotificationDetails androidNotificationDetails
+    = AndroidNotificationDetails('your channel id', 'your channel name',
+        channelDescription: 'your channel description',
+        importance: Importance.high,
+        priority: Priority.high,
+        fullScreenIntent: true,
+        ticker: 'ticker');
+    const NotificationDetails notificationDetails = NotificationDetails(android: androidNotificationDetails);
+
+    //即時通知される
+    await flutterLocalNotificationsPlugin.show(0, 'plain title', 'plain body', notificationDetails, payload: 'item x');
+
+    ///PlaylistからNOを取得し、ランダムで1つ返す
+    playNo = await getPlayListRandomNo(0);
+    ///そのナンバーからpath名を取得
+    String musicPath = await getPlayListPath(playNo);
+    debugPrint('no:$playNo  path:$musicPath ');
+    ///ここでmusicを鳴らす
+    _player = AudioPlayer();
+    await _player.setLoopMode(LoopMode.all);
+    await _player.setFilePath(musicPath);
+    await _player.play();
+
+  }
+  @pragma('vm:entry-point')
+  static  Future<void> stopSound() async{
+    debugPrint('ストップ！');
+    await _player.stop();
+  }
+// Future<void> playMusic(Stirng musicPath) async {
+//   String? strSePath;
+//   strSePath = await _loadStrSetting('mpath');
+//   _player = AudioPlayer();
+//   await _player.setLoopMode(LoopMode.all);
+//   if(strSePath != null && strSePath != "") {
+//     await _player.setFilePath(strSePath);
+//   }else{
+//     await _player.setAsset('assets/alarm.mp3');
+//   }
+//   await _player.play();
+// }
+
+}
+
+//-------------------------------------------------------------
+//   DB処理
+//-------------------------------------------------------------
+Future<int>  getPlayListRandomNo(int fileListNo) async {
+  int lcRandomNo = 1;
+  int lcMaxNo = 0;
+  lcMaxNo = await getPlayListMaxNo(fileListNo);
+
+  //ここでランダム範囲を設定(1 以上 lcMaxNo 未満)
+  lcRandomNo = randomIntWithRange(1,lcMaxNo+1);
+  debugPrint('RandomNo:$lcRandomNo');
+  return lcRandomNo;
+
+}
+Future<int> getPlayListMaxNo(int fileListNo) async {
+
+  int lcMaxNo = 0;
+  String dbPath = await getDatabasesPath();
+  String path = p.join(dbPath, 'internal_assets.db');
+  Database database = await openDatabase(path, version: 1);
+  List<Map> lcMapPlayList = await database.rawQuery("SELECT max(no) maxNo From playList where filelistno = $fileListNo");
+  for(Map item in lcMapPlayList){
+    lcMaxNo = (item['maxNo'] != null)?item['maxNo']:0;
+  }
+  debugPrint('MaxNo:$lcMaxNo');
+  return lcMaxNo;
+}
+int randomIntWithRange(int min, int max) {
+  int value =  math.Random().nextInt(max - min);
+  return value + min;
+}
+
+Future<String>  getPlayListPath(int fileListNo) async {
+  String musicPath = '';
+  String dbPath = await getDatabasesPath();
+  String path = p.join(dbPath, 'internal_assets.db');
+  Database database = await openDatabase(path, version: 1);
+  List<Map> result = await database.rawQuery("SELECT * From playList where no = $fileListNo ");
+  for (Map item in result) {
+    musicPath = (item['musicpath'].toString() != null)?item['musicpath'].toString():'';
+  }
+  return musicPath;
 }

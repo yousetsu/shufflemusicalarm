@@ -22,6 +22,9 @@ dependencies:
   cupertino_icons: ^1.0.2
   path_provider: ^2.0.11
   fluttertoast: any
+  android_alarm_manager_plus: ^2.1.0
+  flutter_local_notifications: ^13.0.0
+  flutter_native_timezone: any
 
 dev_dependencies:
   flutter_test:
