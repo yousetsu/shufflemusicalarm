@@ -10,10 +10,12 @@ import 'package:just_audio/just_audio.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import './main.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 
-int alarmID = 8765;
-late AudioPlayer _player;
 
+@pragma('vm:entry-point')
 class AlarmDetailScreen extends StatefulWidget {
   String mode = '';
   int no = 0;
@@ -22,6 +24,7 @@ class AlarmDetailScreen extends StatefulWidget {
   @override
   State<AlarmDetailScreen> createState() =>  _AlarmDetailScreenState(mode,no);
 }
+@pragma('vm:entry-point')
 class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
   String mode = '';
   int no = 0;
@@ -39,11 +42,15 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
   bool satFlg = false;
   bool sunFlg = false;
   bool isAlarmOn = false;
+
   @override
+  @pragma('vm:entry-point')
   void initState() {
     super.initState();
     init();
+
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -182,6 +189,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
     );
   }
   Future<void> init()async{
+
     switch (mode) {
     //登録モード
       case cnsAlarmDetailScreenIns:
@@ -291,73 +299,57 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
       await txn.rawInsert(query);
     });
   }
-   void onDidReceiveNotificationResponse(NotificationResponse notificationResponse) async {
-    final String? payload = notificationResponse.payload;
-    if (notificationResponse.payload != null) {
-      debugPrint('notification payload: $payload');
-    }
-    showDialog(
-        context: context,
-        builder: (BuildContext context) => AlertDialog(
-          title:  Text('アラーム'),
-          content: Text('アラーム名'),
-          actions: <Widget>[TextButton(child: Text('stop'), onPressed: () => Navigator.pop<String>(context, 'stop')),],));
-  }
+
   Future<void> setAlarm()  async{
     if(isAlarmOn) {
       debugPrint('alarmSet');
 
       await AndroidAlarmManager.oneShot(const Duration(seconds: 5), alarmID, playSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+      //OSごとの通知バーの表示分定義(今はandoridのみ)
+
+
+      //通知バーの表示分定義(andorid分)
+      // const AndroidNotificationDetails androidNotificationDetails
+      // = AndroidNotificationDetails('your channel id', 'your channel name',
+      //     channelDescription: 'your channel description',
+      //     importance: Importance.high,
+      //     priority: Priority.high,
+      //     fullScreenIntent: true,
+      //     ticker: 'ticker');
+      // const NotificationDetails notificationDetails = NotificationDetails(android: androidNotificationDetails);
+
+      //即時通知される
+     // await flutterLocalNotificationsPlugin.show(0, 'plain title', 'plain body', notificationDetails, payload: 'item x');
+      //時刻起動する場合のタイムゾーン設定
+      tz.initializeTimeZones();
+      final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+
+      //時間起動通知される
+      await flutterLocalNotificationsPlugin.zonedSchedule(
+          0,
+          'scheduled title',
+          'scheduled body',
+          tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5)),
+          const NotificationDetails(
+              android: AndroidNotificationDetails(
+                  'your channel id', 'your channel name',
+                  channelDescription: 'your channel description',
+                  priority: Priority.high,
+                  playSound:false,
+                  importance: Importance.high,
+                  fullScreenIntent: true
+              )),
+          androidAllowWhileIdle: true,
+          uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime);
+
     }else {
       debugPrint('alarmStop');
-      await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+
     }
   }
 
-  @pragma('vm:entry-point')
-  static Future<void> playSound() async{
-    int playNo = 0;
-    debugPrint('スタート！');
-    //OSごとの通知バーの表示分定義(今はandoridのみ)
-    // 通知バーに出すアイコンの設定
-    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    //OSごとに初期化をする(今はandroidのみ)
-    final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
-
-    //通知バーをタップしたら飛ぶメソッドを定義する
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings, onDidReceiveNotificationResponse: onDidReceiveNotificationResponse);
-
-    //通知バーの表示分定義(andorid分)
-    const AndroidNotificationDetails androidNotificationDetails
-    = AndroidNotificationDetails('your channel id', 'your channel name',
-        channelDescription: 'your channel description',
-        importance: Importance.high,
-        priority: Priority.high,
-        fullScreenIntent: true,
-        ticker: 'ticker');
-    const NotificationDetails notificationDetails = NotificationDetails(android: androidNotificationDetails);
-
-    //即時通知される
-    await flutterLocalNotificationsPlugin.show(0, 'plain title', 'plain body', notificationDetails, payload: 'item x');
-
-    ///PlaylistからNOを取得し、ランダムで1つ返す
-    playNo = await getPlayListRandomNo(0);
-    ///そのナンバーからpath名を取得
-    String musicPath = await getPlayListPath(playNo);
-    debugPrint('no:$playNo  path:$musicPath ');
-    ///ここでmusicを鳴らす
-    _player = AudioPlayer();
-    await _player.setLoopMode(LoopMode.all);
-    await _player.setFilePath(musicPath);
-    await _player.play();
-
-  }
-  @pragma('vm:entry-point')
-  static  Future<void> stopSound() async{
-    debugPrint('ストップ！');
-    await _player.stop();
-  }
 // Future<void> playMusic(Stirng musicPath) async {
 //   String? strSePath;
 //   strSePath = await _loadStrSetting('mpath');
@@ -372,7 +364,12 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> {
 // }
 
 }
-
+// @pragma('vm:entry-point')
+// void onDidReceiveNotificationResponse(NotificationResponse notificationResponse) async {
+//
+//   debugPrint('通知バーが表示されました！');
+//
+// }
 //-------------------------------------------------------------
 //   DB処理
 //-------------------------------------------------------------
@@ -416,3 +413,4 @@ Future<String>  getPlayListPath(int fileListNo) async {
   }
   return musicPath;
 }
+

@@ -15,6 +15,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+int alarmID = 8765;
+late AudioPlayer _player;
 
 List<Widget> listWedgetitems = <Widget>[];
 List<Map> mapAlarmList = <Map>[];
@@ -52,25 +54,96 @@ Future<void> firstRun() async {
     //print("Opening existing database");
   }
 }
+@pragma('vm:entry-point')
+Future<void> playSound() async {
+  int playNo = 0;
+  debugPrint('スタート！');
 
+  ///PlaylistからNOを取得し、ランダムで1つ返す
+  playNo = await getPlayListRandomNo(0);
+
+  ///そのナンバーからpath名を取得
+  String musicPath = await getPlayListPath(playNo);
+  debugPrint('no:$playNo  path:$musicPath ');
+
+  ///ここでmusicを鳴らす
+  _player = AudioPlayer();
+  await _player.setLoopMode(LoopMode.all);
+  await _player.setFilePath(musicPath);
+  await _player.play();
+}
+
+@pragma('vm:entry-point')
+Future<void> stopSound() async {
+  debugPrint('ストップ！');
+  await _player.stop();
+}
+
+void onDidReceiveNotificationResponse(
+    NotificationResponse notificationResponse) async {
+  final String? payload = notificationResponse.payload;
+  if (notificationResponse.payload != null) {
+    debugPrint('notification payload: $payload');
+  }
+  debugPrint('タップされました！');
+  await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+
+}
 void main() async{
   //SQLflite + android_alarm_manager_plusで必要
   WidgetsFlutterBinding.ensureInitialized();
+  debugPrint('main通過');
 
   ///android_alarm_manager_plusで必要
   await AndroidAlarmManager.initialize();
 
   ///android_alarm_manager_plusで必要な初期設定
-  //Android13だと通知を要求するか聞いてくれるらしい？
-  flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestPermission();
+   // //Android13だと通知を要求するか聞いてくれるらしい？
+   flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestPermission();
+
+   const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+
+   //OSごとに初期化をする(今はandroidのみ)
+   final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
+
+   //通知バーをタップしたら飛ぶメソッドを定義する
+   await flutterLocalNotificationsPlugin.initialize(initializationSettings,
+     onDidReceiveNotificationResponse:onDidReceiveNotificationResponse);
 
 
-  //時刻起動する場合のタイムゾーン設定
+  NotificationAppLaunchDetails? _lanuchDeatil
+  =await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+
+  if (_lanuchDeatil!=null){
+    if (_lanuchDeatil.didNotificationLaunchApp) {
+      debugPrint('タップから呼ばれたぜ！');
+      await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+
+    }else {
+      debugPrint('タップから呼ばなかったよ・・・');
+    }
+  }
+  //
+  // //通知バーの表示分定義(andorid分)
+  // const AndroidNotificationDetails androidNotificationDetails
+  // = AndroidNotificationDetails('your channel id', 'your channel name',
+  //     channelDescription: 'your channel description',
+  //     importance: Importance.high,
+  //     priority: Priority.high,
+  //     fullScreenIntent: true,
+  //     ticker: 'ticker');
+  // const NotificationDetails notificationDetails = NotificationDetails(android: androidNotificationDetails);
+
+  // //即時通知される
+  // await flutterLocalNotificationsPlugin.show(0, 'plain title', 'plain body', notificationDetails, payload: 'item x');
+
+
+  // // //時刻起動する場合のタイムゾーン設定
   // tz.initializeTimeZones();
   // final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
   // tz.setLocalLocation(tz.getLocation(timeZoneName));
-
-  //時間起動通知される
+  //
+  // //時間起動通知される
   // await flutterLocalNotificationsPlugin.zonedSchedule(
   //     0,
   //     'scheduled title',
@@ -79,7 +152,11 @@ void main() async{
   //     const NotificationDetails(
   //         android: AndroidNotificationDetails(
   //             'your channel id', 'your channel name',
-  //             channelDescription: 'your channel description')),
+  //             channelDescription: 'your channel description',
+  //             priority: Priority.high,
+  //             playSound:false,
+  //             importance: Importance.high,
+  //             fullScreenIntent: true)),
   //     androidAllowWhileIdle: true,
   //     uiLocalNotificationDateInterpretation:
   //     UILocalNotificationDateInterpretation.absoluteTime);
@@ -331,5 +408,4 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
   }
 
 }
-
 
