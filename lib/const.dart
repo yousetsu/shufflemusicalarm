@@ -13,6 +13,8 @@ const int cnsCountStateStretch               = 1; ///ストレッチ
 const int cnsCountStateReadyOther    = 2; ///準備反対側
 const int cnsCountStateStretchOther          = 3; ///ストレッチ（反対側）
 
+const String cnsPreAlarmId          = '20230131'; ///ストレッチ（反対側）
+
 //広告ID
 //testID
 const String strCnsBannerID = 'ca-app-pub-3940256099942544/6300978111'; //Banner

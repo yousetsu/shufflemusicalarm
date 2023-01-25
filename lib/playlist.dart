@@ -35,8 +35,7 @@ class _playListEditScreenState extends State<playListEditScreen> {
   }
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        home: DefaultTabController(
+     return DefaultTabController(
             length: 2,
           child: Scaffold(
             appBar: AppBar(
@@ -61,12 +60,7 @@ class _playListEditScreenState extends State<playListEditScreen> {
         ],
           ),
         ),
-        ),
-    );
-  }
-  void buttonPressed() async{
-
-    Navigator.pop(context);
+       );
   }
 /*------------------------------------------------------------------
 MusicFolderデータ取得
@@ -74,18 +68,21 @@ MusicFolderデータ取得
   Future<void> getitemsMusicFolder() async {
     List<Widget> list = <Widget>[];
     int listNo = 0;
-    double titleFont = 25;
     String strMusicName ='';
     String strMusicPath ='';
     int intFileListNo = 0;
-
     int index = 0;
+    list.add(
+        Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: ListTile(
+            title: Text('【説明】曲をタップするとプレイリストに登録されます。',style: TextStyle(color: Colors.black , fontSize: 13)),
+          ),
+        )
+    );
     for (Map item in mapMusicFolder) {
-      if(item['musicname'].toString().length > 10) {
-        titleFont = 15;
-      }else{
-        titleFont = 25;
-      }
       list.add(
         Card(
           shape: RoundedRectangleBorder(
@@ -93,8 +90,7 @@ MusicFolderデータ取得
           ),
           key: Key('$index'),
           child: ListTile(
-            contentPadding: const EdgeInsets.all(10),
-            title: Text('${item['musicname']}  ', style: TextStyle(color: const Color(0xFF191970) , fontSize: titleFont),),
+            title: Text('${item['musicname']}  ', style: TextStyle(color: const Color(0xFF191970) , fontSize: 15),),
             selected: listNo == item['filelistno'],
             onTap: () {
               intFileListNo = fileListNo;  //拡張用
@@ -155,7 +151,7 @@ MusicFolderデータ取得
     List<FileSystemEntity>  plist = pDir.listSync(recursive: true);
 
     for( var item in plist! ){
-      final reg = RegExp(r'\.mp3');
+      final reg = RegExp(r'\.mp3|\.MP3|\.m4a|\.wav|\.WAV');
       if(reg.hasMatch(item.path)) {
         mapMusicFolder.add({
           'No': no,
@@ -177,15 +173,22 @@ Playlistデータ取得
     String strMusicName ='';
     String strMusicPath ='';
     int intFileListNo = 0;
-
     int index = 0;
-    for (Map item in mapPlayList) {
-      debugPrint('alarmNo:${item['no']}  name:${item['musicname']} path:${item['musicpath']}');
-      list.add(
+    list.add(
         Card(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
+          child: ListTile(
+            title: Text('※プレイリストから曲を外す場合は長押しタップしてください',style: TextStyle(color: Colors.black , fontSize: 13)),
+          ),
+        )
+    );
+    for (Map item in mapPlayList) {
+      debugPrint('alarmNo:${item['no']}  name:${item['musicname']} path:${item['musicpath']}');
+      list.add(
+        Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15),),
           key: Key('$index'),
           child: ListTile(
             title: Text('${item['musicname']}  ', style: TextStyle(color: const Color(0xFF191970) , fontSize: titleFont),),
@@ -209,12 +212,11 @@ Playlistデータ取得
     await delPlayList(alarmNo,fileListNo);
     //番号振り直し
    await updPlayListReNo(fileListNo);
-    //トーストで登録された旨を表示
-    Fluttertoast.showToast(msg: 'プレイリストから$nameが削除されました');
+    //トーストで登録解除された旨を表示
+    Fluttertoast.showToast(msg: 'プレイリストから$nameが外れました');
     //再取得
     init();
   }
-
   Future<void> delPlayList(int intPlayListNo, int intfileListNo) async{
     String dbPath = await getDatabasesPath();
     String query = '';
@@ -256,16 +258,9 @@ Playlistデータ取得
   void init() async {
     // await  testEditDB();
     await loadMusicFolder();
-
     await loadPlayList(fileListNo);
-
     await getitemsMusicFolder();
-
     await getitemsPlayList();
-
-
   }
-
-
 
 }
