@@ -85,9 +85,7 @@ MusicFolderデータ取得
     for (Map item in mapMusicFolder) {
       list.add(
         Card(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15),),
           key: Key('$index'),
           child: ListTile(
             title: Text('${item['musicname']}  ', style: TextStyle(color: const Color(0xFF191970) , fontSize: 15),),
@@ -141,11 +139,10 @@ MusicFolderデータ取得
       await txn.rawInsert(query);
     });
   }
-  Future<void>  loadMusicFolder() async {
+  Future<void>  loadMusicFolder(int fileListNo) async {
     int no = 0;
     String path;
     mapMusicFolder = <Map>[];
-
     path = await ExternalPath.getExternalStoragePublicDirectory(ExternalPath.DIRECTORY_MUSIC);
     Directory pDir = Directory(path);
     List<FileSystemEntity>  plist = pDir.listSync(recursive: true);
@@ -155,7 +152,7 @@ MusicFolderデータ取得
       if(reg.hasMatch(item.path)) {
         mapMusicFolder.add({
           'No': no,
-          'filelistno': 0,
+          'filelistno': fileListNo.toString(),
           'musicname': p.basename(item.path),
           'musicpath': item.path,
         });
@@ -257,7 +254,7 @@ Playlistデータ取得
  -------------------------------------------------------------------*/
   void init() async {
     // await  testEditDB();
-    await loadMusicFolder();
+    await loadMusicFolder(fileListNo);
     await loadPlayList(fileListNo);
     await getitemsMusicFolder();
     await getitemsPlayList();

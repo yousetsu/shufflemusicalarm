@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 @pragma('vm:entry-point')
 DateTime calAlarDay(DateTime ltBaseDay, bool monFlg, bool tueFlg, bool wedFlg,
     bool thuFlg, bool friFlg, bool satFlg, bool sunFlg,) {
@@ -70,3 +72,25 @@ DateTime calAlarDay(DateTime ltBaseDay, bool monFlg, bool tueFlg, bool wedFlg,
   return ltDtAlarmDayTime;
 }
 
+bool chkWeek(BuildContext context,bool monFlg,bool tueFlg,bool wedFlg,bool thuFlg,bool friFlg,bool satFlg,bool sunFlg) {
+  if (monFlg == false && tueFlg == false && wedFlg == false &&
+      thuFlg == false && friFlg == false && satFlg == false &&
+      sunFlg == false) {
+    debugPrint('必ず曜日を設定してください');
+    showDialog(context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: Text("警告"),
+          content: Text("必ず曜日を設定してください。"),
+          actions: <Widget>[
+            TextButton(onPressed: () => { Navigator.pop(context)},
+              child: const Text('閉じる'),),
+          ],
+        );
+      },
+    );
+    return false;
+  }else {
+    return true;
+  }
+}

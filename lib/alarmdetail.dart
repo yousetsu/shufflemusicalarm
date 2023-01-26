@@ -243,35 +243,24 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
                 Row(mainAxisAlignment: MainAxisAlignment.center,
                   children: const <Widget>[
                     Icon(Icons.queue_music, size: 25, color: Colors.blue),
-                    Text('プレイリスト登録', style: TextStyle(
-                        fontSize: 20.0, color: Color(0xFF191970))),
+                    Text('プレイリスト登録', style: TextStyle(fontSize: 20.0, color: Color(0xFF191970))),
                   ],),
-                SizedBox(
-                  width: 150, height: 50,
+                SizedBox(width: 150, height: 50,
                   child: ElevatedButton(
                     onPressed: musicSelButtonPressed,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: playListFlg ? Colors.blue : Colors.grey,
-                      elevation: 16,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),),),
-                    child: Text(playListSelButtonText,
-                      style: TextStyle(fontSize: 20.0, color: Colors.white,),),
-                  ),
-                ),
+                    style: ElevatedButton.styleFrom(backgroundColor: playListFlg ? Colors.blue : Colors.grey, elevation: 16, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20),),),
+                    child: Text(playListSelButtonText, style: const TextStyle(fontSize: 20.0, color: Colors.white,),),),),
+                ///ラベル
                 const Padding(padding: EdgeInsets.all(10)),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
+                  children: const  <Widget>[
                     Icon(Icons.label, size: 25, color: Colors.blue),
-                    Text('ラベル(任意)', style: TextStyle(
-                        fontSize: 20.0, color: Color(0xFF191970))),
-                  ],),
+                     Text('ラベル(任意)', style: TextStyle(fontSize: 20.0, color: Color(0xFF191970))),],),
                 Container(
                   padding: const EdgeInsets.all(5.0),
                   alignment: Alignment.bottomCenter,
-                  width: 300.0,
-                  height: 70,
+                  width: 300.0, height: 70,
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.lightBlueAccent),
                     borderRadius: BorderRadius.circular(20),
@@ -280,14 +269,13 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
                     key: _formTitleKey,
                     child: TextFormField(
                       controller: _textControllerTitle,
-                      style: const TextStyle(
-                        fontSize: 15, color: Colors.white,),
+                      style: const TextStyle(fontSize: 15, color: Colors.white,),
                       textAlign: TextAlign.center,
                       maxLength: 20,
                     ),
                   ),
                 ),
-                Padding(padding: EdgeInsets.all(10)),
+                const Padding(padding: EdgeInsets.all(10)),
 
                 ///保存ボタン
                 SizedBox(width: 180, height: 60,
@@ -302,7 +290,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
                       style: TextStyle(fontSize: 25.0, color: Colors.white,),),
                   ),
                 ),
-                Padding(padding: EdgeInsets.all(10)),
+               const Padding(padding: EdgeInsets.all(10)),
               ]
           ),
         ),
@@ -318,27 +306,19 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
 
   void buttonPressed() async {
     int intMax = 0;
-    switch (mode) {
-    //登録モード
-      case cnsAlarmDetailScreenIns:
-        intMax = await getMaxAlarmNo();
-        await insertAlarmData(intMax + 1);
-        break;
-    //編集モード
-      case cnsAlarmDetailScreenUpd:
-        await updateAlarmData(alarmNo);
-        break;
+
+    ///曜日必須チェック
+    if(chkWeek(context,monFlg,tueFlg,wedFlg,thuFlg,friFlg,satFlg,sunFlg) == false){
+      return;
     }
 
-    if (monFlg == false && tueFlg == false && wedFlg == false &&
-        thuFlg == false && friFlg == false && satFlg == false &&
-        sunFlg == false) {
-      debugPrint('必ず曜日を設定してください');
+    ///アラームファイル必須チェック
+    if (playListFlg == false) {
       showDialog(context: context,
         builder: (_) {
           return AlertDialog(
             title: Text("警告"),
-            content: Text("必ず曜日を設定してください。"),
+            content: Text("プレイリストに音楽ファイルを登録してください"),
             actions: <Widget>[
               TextButton(onPressed: () => { Navigator.pop(context)},
                 child: const Text('閉じる'),),
@@ -346,33 +326,21 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
           );
         },
       );
+      return;
     }
+    ///更新処理
+    //拡張予定（第一引数：アラームNo,第二引数：ファイルリストNo)
+     await updateAlarmData(alarmNo,alarmNo);
 
     ///アラームIDの生成（固定の接頭辞＋アラームNo）
     String strAlarmID = cnsPreAlarmId + alarmNo.toString();
     int alarmID = int.parse(strAlarmID);
 
     if (isAlarmOn) {
-      if (playListFlg == false) {
-        showDialog(context: context,
-          builder: (_) {
-            return AlertDialog(
-              title: Text("警告"),
-              content: Text("プレイリストに音楽ファイルが登録されていません"),
-              actions: <Widget>[
-                TextButton(onPressed: () => { Navigator.pop(context)},
-                  child: const Text('閉じる'),),
-              ],
-            );
-          },
-        );
-      }
-
       ///時刻設定処理(AndroidAlarmManager)
       //時刻を現在時刻と比較する
       DateTime dtNow = DateTime.now();
-      DateTime dtSetTime = DateTime(
-          dtNow.year, dtNow.month, dtNow.day, _time.hour, _time.minute);
+      DateTime dtSetTime = DateTime(dtNow.year, dtNow.month, dtNow.day, _time.hour, _time.minute);
       DateTime dtBaseDay = DateTime.now();
 
       //最終的なアラーム設定日時
@@ -386,20 +354,14 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
       }
 
       //対象の曜日になるまで設定時刻を繰り返す(共通化)
-      dtAlarmDayTime = calAlarDay(
-          dtBaseDay,
-          monFlg,
-          tueFlg,
-          wedFlg,
-          thuFlg,
-          friFlg,
-          satFlg,
-          sunFlg);
+      dtAlarmDayTime = calAlarDay(dtBaseDay, monFlg, tueFlg, wedFlg, thuFlg, friFlg, satFlg, sunFlg);
 
       debugPrint('保存時：$dtAlarmDayTime   alarmID:$alarmID');
 
       ///音楽再生時刻設定
-      await AndroidAlarmManager.oneShotAt(dtAlarmDayTime, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+      Map<String, dynamic> paraMap = {'filelistno':alarmNo}; //拡張用filelistno = alarmno
+
+      await AndroidAlarmManager.oneShotAt(dtAlarmDayTime, alarmID,  playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
 
       ///通知バー時刻設定
       tz.initializeTimeZones();
@@ -435,23 +397,20 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
           alarmClock: true,
           allowWhileIdle: true);
     }
-
     Navigator.pop(context);
   }
 
   void musicSelButtonPressed() async {
-    int fileListNo = 0;
-    Navigator.push(context,
-      MaterialPageRoute(builder: (context) => playListEditScreen(fileListNo)),);
+    int fileListNo = alarmNo;  //拡張用（fileListNo　= alarmno）
+
+    //拡張予定（第一引数：アラームNo,第二引数：ファイルリストNo)
+    updateAlarmData(alarmNo,alarmNo);
+
+    Navigator.push(context, MaterialPageRoute(builder: (context) => playListEditScreen(fileListNo)),);
   }
 
   Future<void> init() async {
     switch (mode) {
-    //登録モード
-      case cnsAlarmDetailScreenIns:
-        title = 'アラーム設定';
-        buttonName = '登録';
-        break;
     //編集モード
       case cnsAlarmDetailScreenUpd:
         title = 'アラーム設定';
@@ -460,7 +419,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
         break;
     }
     int playListCnt = 0;
-    int fileListNo = 0; //拡張用
+    int fileListNo = alarmNo; //拡張用(alarmNo = filelistNo)
     playListFlg = false;
     //playlist存在チェック
     playListCnt = await getPlayListCount(fileListNo);
@@ -494,13 +453,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     String lcTitle = '';
     String lcTime = '';
     int lcAlarmFlag = 0;
-    int intLcMon = 0;
-    int intLcTue = 0;
-    int intLcWed = 0;
-    int intLcThu = 0;
-    int intLcFri = 0;
-    int intLcSat = 0;
-    int intLcSun = 0;
+    int intLcMon = 0;int intLcTue = 0;int intLcWed = 0;int intLcThu = 0;int intLcFri = 0;int intLcSat = 0;int intLcSun = 0;
     String dbPath = await getDatabasesPath();
     String path = p.join(dbPath, 'internal_assets.db');
     Database database = await openDatabase(path, version: 1);
@@ -510,57 +463,23 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
       lcTitle = item['title'].toString();
       lcTime = item['time'].toString();
       lcAlarmFlag = item['alarmflg'];
-      intLcMon = item['mon'];
-      intLcTue = item['tue'];
-      intLcWed = item['wed'];
-      intLcThu = item['thu'];
-      intLcFri = item['fri'];
-      intLcSat = item['sat'];
-      intLcSun = item['sun'];
+      intLcMon = item['mon'];intLcTue = item['tue'];intLcWed = item['wed'];
+      intLcThu = item['thu'];intLcFri = item['fri'];intLcSat = item['sat'];intLcSun = item['sun'];
     }
     setState(() {
       _textControllerTitle.text = lcTitle;
       _time = DateTime.parse(lcTime);
-      if (lcAlarmFlag == cnsOtherSideOff) {
+      if (lcAlarmFlag == cnsFlgOff) {
         isAlarmOn = false;
       } else {
         isAlarmOn = true;
       }
-      monFlg = (intLcMon == cnsFlgOn) ? true : false;
-      tueFlg = (intLcTue == cnsFlgOn) ? true : false;
-      wedFlg = (intLcWed == cnsFlgOn) ? true : false;
-      thuFlg = (intLcThu == cnsFlgOn) ? true : false;
-      friFlg = (intLcFri == cnsFlgOn) ? true : false;
-      satFlg = (intLcSat == cnsFlgOn) ? true : false;
-      sunFlg = (intLcSun == cnsFlgOn) ? true : false;
+      monFlg = (intLcMon == cnsFlgOn) ? true : false;tueFlg = (intLcTue == cnsFlgOn) ? true : false;wedFlg = (intLcWed == cnsFlgOn) ? true : false;
+      thuFlg = (intLcThu == cnsFlgOn) ? true : false;friFlg = (intLcFri == cnsFlgOn) ? true : false;satFlg = (intLcSat == cnsFlgOn) ? true : false;sunFlg = (intLcSun == cnsFlgOn) ? true : false;
     });
   }
 
-  Future<void> insertAlarmData(int lcNo) async {
-    String dbPath = await getDatabasesPath();
-    String query = '';
-    String path = p.join(dbPath, 'internal_assets.db');
-    Database database = await openDatabase(path, version: 1,);
-    int filelistNo = 0; //拡張予定
-    int lcAlarmFlg = isAlarmOn ? cnsFlgOn : cnsFlgOff;
-    int intLcMon = monFlg ? cnsFlgOn : cnsFlgOff;
-    int intLcTue = tueFlg ? cnsFlgOn : cnsFlgOff;
-    int intLcWed = wedFlg ? cnsFlgOn : cnsFlgOff;
-    int intLcThu = thuFlg ? cnsFlgOn : cnsFlgOff;
-    int intLcFri = friFlg ? cnsFlgOn : cnsFlgOff;
-    int intLcSat = satFlg ? cnsFlgOn : cnsFlgOff;
-    int intLcSun = sunFlg ? cnsFlgOn : cnsFlgOff;
-
-    query =
-    'INSERT INTO alarmList(alarmno,time,title,alarmflg,playmode,filelistno,soundtime,week,mon,tue,wed,thu,fri,sat,sun,vol,snooze,fadein,kaku1,kaku2,kaku3,kaku4) values($lcNo,"${_time
-        .toString()}","${_textControllerTitle
-        .text}",$lcAlarmFlg,0, $filelistNo,  "",0,$intLcMon,$intLcTue,$intLcWed,$intLcThu,$intLcFri,$intLcSat,$intLcSun,0,0,0,null,null,null,null) ';
-    await database.transaction((txn) async {
-      await txn.rawInsert(query);
-    });
-  }
-
-  Future<void> updateAlarmData(int lcNo) async {
+  Future<void> updateAlarmData(int alramNo, int filelistNo) async {
     String dbPath = await getDatabasesPath();
     String query = '';
     String path = p.join(dbPath, 'internal_assets.db');
@@ -568,42 +487,20 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
 
     //オンにした音楽鳴らす
     int lcAlarmFlg = isAlarmOn ? cnsFlgOn : cnsFlgOff;
-    int intLcMon = monFlg ? cnsFlgOn : cnsFlgOff;
-    int intLcTue = tueFlg ? cnsFlgOn : cnsFlgOff;
-    int intLcWed = wedFlg ? cnsFlgOn : cnsFlgOff;
-    int intLcThu = thuFlg ? cnsFlgOn : cnsFlgOff;
-    int intLcFri = friFlg ? cnsFlgOn : cnsFlgOff;
-    int intLcSat = satFlg ? cnsFlgOn : cnsFlgOff;
-    int intLcSun = sunFlg ? cnsFlgOn : cnsFlgOff;
+    int intLcMon = monFlg ? cnsFlgOn : cnsFlgOff;int intLcTue = tueFlg ? cnsFlgOn : cnsFlgOff;int intLcWed = wedFlg ? cnsFlgOn : cnsFlgOff;
+    int intLcThu = thuFlg ? cnsFlgOn : cnsFlgOff;int intLcFri = friFlg ? cnsFlgOn : cnsFlgOff;int intLcSat = satFlg ? cnsFlgOn : cnsFlgOff;int intLcSun = sunFlg ? cnsFlgOn : cnsFlgOff;
 
     query = 'UPDATE alarmList set '
         + 'time = "${_time.toString()}",title = "${_textControllerTitle
-            .text}",alarmflg = $lcAlarmFlg, filelistno = 0, '
-        + 'mon = $intLcMon,'
-        + 'tue = $intLcTue,'
-        + 'wed = $intLcWed,'
-        + 'thu = $intLcThu,'
-        + 'fri = $intLcFri,'
-        + 'sat = $intLcSat,'
-        + 'sun = $intLcSun'
-        + ' where alarmno = $lcNo';
+            .text}",alarmflg = $lcAlarmFlg, filelistno = $filelistNo, '
+        + 'mon = $intLcMon,' + 'tue = $intLcTue,' + 'wed = $intLcWed,'
+        + 'thu = $intLcThu,' + 'fri = $intLcFri,' + 'sat = $intLcSat,' + 'sun = $intLcSun'
+        + ' where alarmno = $alramNo';
     await database.transaction((txn) async {
       await txn.rawInsert(query);
     });
   }
 
-  Future<int> getMaxAlarmNo() async {
-    int maxNo = 0;
-    String dbPath = await getDatabasesPath();
-    String path = p.join(dbPath, 'internal_assets.db');
-    Database database = await openDatabase(path, version: 1,);
-    List<Map> result = await database.rawQuery(
-        "SELECT MAX(alarmno) no From alarmList");
-    for (Map item in result) {
-      maxNo = (item['no'] != null) ? item['no'] : 0;
-    }
-    return maxNo;
-  }
 }
 //-------------------------------------------------------------
 //   DB処理
@@ -638,13 +535,13 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     return value + min;
   }
 
-  Future<String> getPlayListPath(int fileListNo) async {
+  Future<String> getPlayListPath(int playNo,int fileListNo) async {
     String musicPath = '';
     String dbPath = await getDatabasesPath();
     String path = p.join(dbPath, 'internal_assets.db');
     Database database = await openDatabase(path, version: 1);
     List<Map> result = await database.rawQuery(
-        "SELECT * From playList where no = $fileListNo ");
+        "SELECT * From playList where no = $playNo and filelistno = $fileListNo ");
     for (Map item in result) {
       musicPath = (item['musicpath'].toString() != null)
           ? item['musicpath'].toString()
