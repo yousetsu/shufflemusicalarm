@@ -12,5 +12,5 @@ const String cnsPreAlarmId          = '20230131';
 const String strCnsBannerID = 'ca-app-pub-3940256099942544/6300978111'; //Banner
 const String strCnsRewardID = 'ca-app-pub-3940256099942544/5224354917'; //Reward
 //本番
-//const String strCnsBannerID = ''; //banner
-//const String strCnsRewardID = ''; //Reward
+//const String strCnsBannerID = 'ca-app-pub-8759269867859745~2856933322'; //banner
+//const String strCnsRewardID = 'ca-app-pub-8759269867859745/6795661410'; //Reward

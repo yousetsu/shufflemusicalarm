@@ -15,7 +15,10 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import './globalmethod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+RewardedAd? _rewardedAd;
+const int maxFailedLoadAttempts = 3;
 late AudioPlayer _player;
 
 List<Widget> listWedgetitems = <Widget>[];
@@ -31,7 +34,6 @@ final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
 /*------------------------------------------------------------------
 全共通のメソッド
  -------------------------------------------------------------------*/
-
 //初回起動分の処理
 @pragma('vm:entry-point')
 Future<void> firstRun() async {
@@ -55,9 +57,6 @@ Future<void> firstRun() async {
     //print("Opening existing database");
   }
 }
-
-
-
 @pragma('vm:entry-point')
 Future<void> getAlarmData(int alarmNo) async {
 
@@ -67,14 +66,11 @@ Future<void> getAlarmData(int alarmNo) async {
   alarmResetMap = await database.rawQuery("SELECT * From alarmList where alarmno = $alarmNo");
 
 }
-
-
 @pragma('vm:entry-point')
 void main() async{
 
   //SQLflite + android_alarm_manager_plusで必要  main関数内で非同期処理するときの決まり文句らしい
   WidgetsFlutterBinding.ensureInitialized();
-  debugPrint('main通過');
   ///android_alarm_manager_plusで必要
   await AndroidAlarmManager.initialize();
   ///android_alarm_manager_plusで必要な初期設定
@@ -115,6 +111,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> with RouteAware {
   bool isAlarmOn = false;
   Key? listViewKey;
+  int _numRewardedLoadAttempts = 0;
 
   @pragma('vm:entry-point')
   @override
@@ -122,6 +119,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     super.initState();
     init();
     tapAlarmSet();
+    _createRewardedAd();
   }
   Future<void> alarmStopNextSet(String? payload)async{
     int alarmID = 0;
@@ -129,13 +127,10 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
 
     if (payload != null) {
       alarmNo = int.parse(payload);
-      debugPrint('notification payload: $payload');
       alarmID = int.parse(cnsPreAlarmId + payload);
     }
     ///アラームを止める
-    debugPrint('アラームを止めます！:$alarmID');
     await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-    debugPrint('アラームを止まってますかね？');
     ///止めたら次のアラームを設定する
     //次回のアラーム時刻を算出する
     String strTime = '';
@@ -149,8 +144,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     }
 
     //その情報を元に明日の起床時刻を割り出す。
-    debugPrint('strTime:$strTime');debugPrint('Mon:$intMonFlg');debugPrint('Tue:$intTueFlg');debugPrint('Wed:$intWedFlg');debugPrint('Thu:$intThuFlg');
-
     DateTime dtTime = DateTime.parse(strTime);
     DateTime dtNowTime = DateTime.now();
     bool monFlg = false;bool tueFlg = false;bool wedFlg = false;
@@ -166,8 +159,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
 
     //曜日を考慮した時刻を算出
     DateTime dtNextAlarmTime = calAlarDay(dtBaseTime,monFlg,tueFlg,wedFlg,thuFlg,friFlg,satFlg,sunFlg);
-
-    debugPrint('次設定する日:$dtNextAlarmTime');
 
     ///音楽再生時刻設定
     await AndroidAlarmManager.oneShotAt(dtNextAlarmTime, alarmID, playSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
@@ -197,14 +188,12 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     strAlarmID = strAlarmID.replaceFirst(cnsPreAlarmId, '');
     int playListNo = int.parse(strAlarmID);//拡張(アラームNO = プレイリストNo)
 
-    debugPrint('playSoundスタート！ alarmID:$alarmID');
 
     ///PlaylistからNOを取得し、ランダムで1つ返す
     playNo = await getPlayListRandomNo(playListNo);
-
     ///そのナンバーからpath名を取得
     String musicPath = await getPlayListPath(playNo,playListNo);
-    debugPrint('playListNo:$playListNo playNo:$playNo  path:$musicPath ');
+
 
     ///ここでmusicを鳴らす
     _player = AudioPlayer();
@@ -215,22 +204,16 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
 
   @pragma('vm:entry-point')
   static  stopSound() async {
-    debugPrint('ストップ！stopSound()');
     await _player.stop();
   }
   @pragma('vm:entry-point')
   void onDidReceiveNotificationResponse(NotificationResponse notificationResponse) async {
     final String? payload = notificationResponse.payload;
-    debugPrint('タップされました！(オンライン)');
     if (notificationResponse.payload != null) {
       ///タップされたので、アラームを止めて、次回のアラームを設定する
-      debugPrint('notification payload: $payload');
       await alarmStopNextSet(payload);
     }
-
-
   }
-
   @override
   void didChangeDependencies() { // 遷移時に呼ばれる関数
     // routeObserverに自身を設定(didPopのため)
@@ -247,7 +230,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
   }
   @override
   void didPopNext() {
-    debugPrint('didpopメイン画面');
     // 再描画
     init();
   }
@@ -258,7 +240,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children:  <Widget>[
-          const Padding(padding: EdgeInsets.all(10)),
+          const Padding(padding: EdgeInsets.all(5)),
           Expanded(child: ListView(key: listViewKey,children: listWedgetitems, ),),
         ],
       ),
@@ -272,9 +254,10 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
   void insertAlarmList() async{
   //  Navigator.push(context, MaterialPageRoute(builder: (context) => AlarmDetailScreen(cnsAlarmDetailScreenIns,-1)),);
     int intMax = await getMaxAlarmNo();
+    //アラームが3個以上なら動画視聴
+    _showRewardedAd(intMax + 1);
     await insertAlarmData(intMax + 1); //拡張予定（引数にファイルリストNoを追加）
     init();
-
   }
   Future<void> insertAlarmData(int lcNo) async {
     String dbPath = await getDatabasesPath();
@@ -283,9 +266,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     Database database = await openDatabase(path, version: 1,);
     int filelistNo = lcNo; //拡張予定（アラームナンバーと同じのを入れる）
     int lcAlarmFlg = 0;
-
     DateTime initTime = DateTime(DateTime.now().year,DateTime.now().month,DateTime.now().day,7,0,0);
-
     query =
     'INSERT INTO alarmList(alarmno,time,title,alarmflg,playmode,filelistno,soundtime,week,mon,tue,wed,thu,fri,sat,sun,vol,snooze,fadein,kaku1,kaku2,kaku3,kaku4) '
         + 'values($lcNo,"${initTime.toString()}","",$lcAlarmFlg,0, $filelistNo,  "",0,1,1,1,1,1,1,1,0,0,0,null,null,null,null)';
@@ -350,7 +331,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     List<Map> lcMapList = await database.rawQuery("SELECT * From alarmList order by alarmno");
     //番号を振り直しして更新
     for (Map item in lcMapList) {
-      debugPrint('oldNo:${item['alarmno']} NewNo:$reNo' );
       query = 'UPDATE alarmList set alarmno = $reNo where alarmno = ${item['alarmno']}';
       await database.transaction((txn) async {
         await txn.rawInsert(query);
@@ -462,74 +442,91 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
 初期処理
  -------------------------------------------------------------------*/
   void init() async {
-    debugPrint('main画面init');
     // await  testEditDB();
-    await permissionCheck();
+    await permissionAllCheck();
+ //   permissionCheckGroup();
+ //   permissionCheckReadAudio();
+  //  permissionCheckmanageExternalStorage();
+ //   permissionCheckStorage();
     await loadList();
     await getItems();
   }
-  Future<void>permissionChecktest() async{
+  Future<void>permissionCheckGroup() async{
 
     Map<Permission, PermissionStatus> statuses;
 
-    // var   statusvideos = await Permission.videos.status;
-    // var  statusphotos = await Permission.photos.status;
-    // var  statusaudio= await Permission.audio.status;
-    // var  statusaccessMediaLocation= await Permission.accessMediaLocation.status;
-    // var  statusaccessnotification= await Permission.notification.status;
-    // var  statusaccessmanageExternalStorage= await Permission.manageExternalStorage.status;
-    // if (statusvideos != PermissionStatus.granted
-    //     || statusphotos != PermissionStatus.granted
-    //     || statusaudio != PermissionStatus.granted
-    //     || statusaccessMediaLocation != PermissionStatus.granted
-    //     || statusaccessnotification != PermissionStatus.granted
-    //     || statusaccessmanageExternalStorage != PermissionStatus.granted
-    // ) {
-    //    statuses = await [
-    //     Permission.videos,
-    //     Permission.photos,
-    //     Permission.audio,
-    //     Permission.accessMediaLocation,
-    //     Permission.notification,
-    //     Permission.manageExternalStorage,
-    //   ].request();
-    // }
-    //  debugPrint('videos:$statusvideos');
-    //  debugPrint('photos:$statusphotos');
-    //  debugPrint('audio:$statusaudio');
-    // debugPrint('accessMediaLocation:$statusaccessMediaLocation');
-    // debugPrint('notification:$statusaccessnotification');
-    // debugPrint('ExternalStorage:$statusaccessmanageExternalStorage');
-
-
+    var   statusvideos = await Permission.videos.status;
+    var  statusphotos = await Permission.photos.status;
+    var  statusaudio= await Permission.audio.status;
+    var  statusaccessMediaLocation= await Permission.accessMediaLocation.status;
+    var  statusaccessnotification= await Permission.notification.status;
     var  statusaccessmanageExternalStorage= await Permission.manageExternalStorage.status;
-    if (statusaccessmanageExternalStorage != PermissionStatus.granted
+    if (statusvideos != PermissionStatus.granted
+        || statusphotos != PermissionStatus.granted
+        || statusaudio != PermissionStatus.granted
+        || statusaccessMediaLocation != PermissionStatus.granted
+        || statusaccessnotification != PermissionStatus.granted
+        || statusaccessmanageExternalStorage != PermissionStatus.granted
     ) {
-      statuses = await [
+       statuses = await [
+        Permission.videos,
+        Permission.photos,
+        Permission.audio,
+        Permission.accessMediaLocation,
+        Permission.notification,
         Permission.manageExternalStorage,
       ].request();
     }
+     debugPrint('videos:$statusvideos');
+     debugPrint('photos:$statusphotos');
+     debugPrint('audio:$statusaudio');
+    debugPrint('accessMediaLocation:$statusaccessMediaLocation');
+    debugPrint('notification:$statusaccessnotification');
     debugPrint('ExternalStorage:$statusaccessmanageExternalStorage');
-    // var status = await Permission.audio.status;
-    //    if (status != PermissionStatus.granted) {
-    //      status = await Permission.audio.request();
-    //    }
-  //   // 権限がない場合の処理.
-  //   if (status != PermissionStatus.granted) {
-  //     showDialog(context: context,
-  //       builder: (_) {
-  //         return AlertDialog(
-  //           title: Text("権限を許可してください。"),
-  //           content: Text("設定->アプリ->シャッフル音楽アラーム->権限->音楽とオーディオと動画を許可にしてください。"),
-  //           actions: <Widget>[TextButton(onPressed: () => {SystemNavigator.pop()}, child: const Text('閉じる'),),],
-  //         );
-  //       },
-  //     );
-  //   }
-   }
 
-Future<void> permissionCheck() async{
-    await permissionChecktest();
+
+   }
+  Future<void>permissionCheckReadAudio() async {
+    var status = await Permission.manageExternalStorage.status;
+    if ( status != PermissionStatus.granted) {
+      status = await Permission.manageExternalStorage.request();
+    }
+  }
+
+  Future<void>permissionCheckStorage() async {
+    var status = await Permission.storage.status;
+    if (status != PermissionStatus.granted) {
+      status = await Permission.storage.request();
+    }
+  }
+  Future<void>permissionCheckmanageExternalStorage() async {
+    var status = await Permission.audio.status;
+    if (status != PermissionStatus.granted) {
+      status = await Permission.audio.request();
+    }
+    // 権限がない場合の処理.
+    // if (status != PermissionStatus.granted) {
+    //   showDialog(context: context,
+    //     builder: (_) {
+    //       return AlertDialog(
+    //         title: Text("権限を許可してください。"),
+    //         content: Text("設定->アプリ->シャッフル音楽アラーム->権限->音楽とオーディオと動画を許可にしてください。"),
+    //         actions: <Widget>[TextButton(onPressed: () => {SystemNavigator.pop()}, child: const Text('閉じる'),),],
+    //       );
+    //     },
+    //   );
+    // }
+  }
+Future<void> permissionAllCheck() async{
+  Map<Permission, PermissionStatus> statuses;
+  var  statusaccessmanageExternalStorage= await Permission.manageExternalStorage.status;
+  if (statusaccessmanageExternalStorage != PermissionStatus.granted
+  ) {
+    statuses = await [
+      Permission.manageExternalStorage,
+    ].request();
+  }
+  debugPrint('ExternalStorage:$statusaccessmanageExternalStorage');
 }
 
 void tapAlarmSet() async{
@@ -545,18 +542,66 @@ void tapAlarmSet() async{
   NotificationAppLaunchDetails? _lanuchDeatil =await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
   if (_lanuchDeatil!=null){
     if (_lanuchDeatil.didNotificationLaunchApp) {
-
       String? payload = _lanuchDeatil!.notificationResponse?.payload;
-      debugPrint('バックグラウンドからタップで呼ばれたぜ！payload:$payload');
-
       ///タップされたので、アラームを止めて、次回のアラームを設定する
       await alarmStopNextSet(payload);
-
-    }else {
-      debugPrint('タップから呼ばなかったよ・・・');
     }
   }
 }
+/*------------------------------------------------------------------
+動画準備
+ -------------------------------------------------------------------*/
+  void _createRewardedAd() {
+    RewardedAd.load(
+        adUnitId: strCnsRewardID,
+        request: const AdRequest(),
+        rewardedAdLoadCallback: RewardedAdLoadCallback(
+          onAdLoaded: (RewardedAd ad) {
+            print('$ad loaded.');
+            _rewardedAd = ad;
+            _numRewardedLoadAttempts = 0;
+          },
+          onAdFailedToLoad: (LoadAdError error) {
+            print('RewardedAd failed to load: $error');
+            _rewardedAd = null;
+            _numRewardedLoadAttempts += 1;
+            if (_numRewardedLoadAttempts < maxFailedLoadAttempts) {
+              _createRewardedAd();
+            }
+          },
+        ));
+  }
+/*------------------------------------------------------------------
+動画実行
+ -------------------------------------------------------------------*/
+  void _showRewardedAd(int alarmCnt) async {
+    if(alarmCnt >= 3 ) {
+      if (_rewardedAd == null) {
+        print('Warning: attempt to show rewarded before loaded.');
+        return;
+      }
+      _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdShowedFullScreenContent: (RewardedAd ad) =>
+            print('ad onAdShowedFullScreenContent.'),
+        onAdDismissedFullScreenContent: (RewardedAd ad) {
+          print('$ad onAdDismissedFullScreenContent.');
+          ad.dispose();
+          _createRewardedAd();
+        },
+        onAdFailedToShowFullScreenContent: (RewardedAd ad, AdError error) {
+          print('$ad onAdFailedToShowFullScreenContent: $error');
+          ad.dispose();
+          _createRewardedAd();
+        },
+      );
+      _rewardedAd!.setImmersiveMode(true);
+      _rewardedAd!.show(
+          onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
+            print('$ad with reward $RewardItem(${reward.amount}, ${reward.type})');
+          });
+      _rewardedAd = null;
+    }
+  }
 }
 
 @pragma('vm:entry-point')
@@ -567,14 +612,12 @@ Future<void> playSound1(int alarmID) async {
   strAlarmID = strAlarmID.replaceFirst(cnsPreAlarmId, '');
   int playListNo = int.parse(strAlarmID);//拡張(アラームNO = プレイリストNo)
 
-  debugPrint('playSound1スタート！ alarmID:$alarmID');
-
   ///PlaylistからNOを取得し、ランダムで1つ返す
   playNo = await getPlayListRandomNo(playListNo);
-
   ///そのナンバーからpath名を取得
   String musicPath = await getPlayListPath(playNo,playListNo);
-  debugPrint('PlayListNo:$playListNo PlayNo:$playNo  path:$musicPath ');
+
+  debugPrint('musicPath:$musicPath');
 
   ///ここでmusicを鳴らす
   _player = AudioPlayer();
@@ -585,6 +628,5 @@ Future<void> playSound1(int alarmID) async {
 
 @pragma('vm:entry-point')
 stopSound1() async {
-  debugPrint('stopSound1(ストップ！)');
   await _player.stop();
 }

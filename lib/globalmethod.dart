@@ -76,7 +76,6 @@ bool chkWeek(BuildContext context,bool monFlg,bool tueFlg,bool wedFlg,bool thuFl
   if (monFlg == false && tueFlg == false && wedFlg == false &&
       thuFlg == false && friFlg == false && satFlg == false &&
       sunFlg == false) {
-    debugPrint('必ず曜日を設定してください');
     showDialog(context: context,
       builder: (_) {
         return AlertDialog(

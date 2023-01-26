@@ -2,11 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:external_path/external_path.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:flutter_picker/flutter_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
-import './const.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 //Musicフォルダ用一覧
 List<Widget> _itemsMusicFolder = <Widget>[];
@@ -108,8 +105,6 @@ MusicFolderデータ取得
     int intPlayListMaxNo = 0;
     //ファイルリストNo（現在固定ゼロ）の最大MaxNoを取得
     intPlayListMaxNo = await getPlayListMaxNo(fileListNo);
-
-    debugPrint('MaxNo:$intPlayListMaxNo');
     //プレイリストテーブルに登録
     await insPlayList(intPlayListMaxNo+1,fileListNo,name,path);
     //トーストで登録された旨を表示
@@ -182,7 +177,6 @@ Playlistデータ取得
         )
     );
     for (Map item in mapPlayList) {
-      debugPrint('alarmNo:${item['no']}  name:${item['musicname']} path:${item['musicpath']}');
       list.add(
         Card(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15),),
@@ -220,7 +214,6 @@ Playlistデータ取得
     String path = p.join(dbPath, 'internal_assets.db');
     Database database = await openDatabase(path, version: 1,);
     query = 'DELETE From playList where no = $intPlayListNo and filelistno = $intfileListNo';
-    debugPrint('query:$query');
     await database.transaction((txn) async {
       await txn.rawInsert(query);
     });

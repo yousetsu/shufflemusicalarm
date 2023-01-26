@@ -6,7 +6,6 @@ import 'package:sqflite/sqflite.dart';
 import './const.dart';
 import './playlist.dart';
 import 'dart:math' as math;
-import 'package:just_audio/just_audio.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import './main.dart';
@@ -14,6 +13,7 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import './globalmethod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 @pragma('vm:entry-point')
 class AlarmDetailScreen extends StatefulWidget {
@@ -26,6 +26,27 @@ class AlarmDetailScreen extends StatefulWidget {
 }
 @pragma('vm:entry-point')
 class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
+  //バナー広告初期化
+  final BannerAd myBanner = BannerAd(
+    adUnitId : strCnsBannerID,
+    size: AdSize.banner,
+    request: const AdRequest(),
+    listener: BannerAdListener(
+      onAdLoaded: (Ad ad) => print('バナー広告がロードされました'),
+      // Called when an ad request failed.
+      onAdFailedToLoad: (Ad ad, LoadAdError error) {
+        // Dispose the ad here to free resources.
+        ad.dispose();
+        //  print('バナー広告の読み込みが次の理由で失敗しました: $error');
+      },
+      // Called when an ad opens an overlay that covers the screen.
+      onAdOpened: (Ad ad) => print('バナー広告が開かれました'),
+      // Called when an ad removes an overlay that covers the screen.
+      onAdClosed: (Ad ad) => print('バナー広告が閉じられました'),
+      // Called when an impression occurs on the ad.
+      onAdImpression: (Ad ad) => print('Ad impression.'),
+    ),
+  );
   String mode = '';
   int alarmNo = 0;
 
@@ -70,18 +91,26 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
 
   @override
   void didPopNext() {
-    debugPrint('timePress:$timePress');
     if (timePress) {
       setState(() => { timePress = false});
       return;
     }
     // 再描画
-    debugPrint('アラーム詳細画面didpop');
     init();
   }
 
   @override
   Widget build(BuildContext context) {
+    //動画バナーロード
+    myBanner.load();
+    final AdWidget adWidget = AdWidget(ad: myBanner);
+    final Container adContainer = Container(
+      alignment: Alignment.center,
+      width: myBanner.size.width.toDouble(),
+      height: myBanner.size.height.toDouble(),
+      child: adWidget,
+    );
+
     return Scaffold(
       appBar: AppBar(
           title: Text(title), backgroundColor: const Color(0xFF6495ed)),
@@ -290,9 +319,12 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
                       style: TextStyle(fontSize: 25.0, color: Colors.white,),),
                   ),
                 ),
-               const Padding(padding: EdgeInsets.all(10)),
+               const Padding(padding: EdgeInsets.all(15)),
+                adContainer,
+                const Padding(padding: EdgeInsets.all(10)),
               ]),
         ),
+
       ),
     );
   }
@@ -437,8 +469,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     ///時刻設定処理(AndroidAlarmManager)
     //時刻を現在時刻と比較する
     DateTime dtNow = DateTime.now();
-    DateTime dtSetTime = DateTime(
-        dtNow.year, dtNow.month, dtNow.day, _time.hour, _time.minute);
+    DateTime dtSetTime = DateTime(dtNow.year, dtNow.month, dtNow.day, _time.hour, _time.minute);
     DateTime dtBaseDay = DateTime.now();
 
     //最終的なアラーム設定日時
@@ -452,11 +483,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     }
     //対象の曜日になるまで設定時刻を繰り返す(共通化)
     dtAlarmDayTime = calAlarDay(dtBaseDay, monFlg, tueFlg, wedFlg, thuFlg, friFlg, satFlg, sunFlg);
-    debugPrint('保存時：$dtAlarmDayTime   alarmID:$alarmID');
 
-    ///音楽再生時刻設定
-    //拡張用filelistno = alarmno
-    await AndroidAlarmManager.oneShotAt(dtAlarmDayTime, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
     ///通知バー時刻設定
     tz.initializeTimeZones();
     final String timeZoneName = await FlutterNativeTimezone
@@ -467,6 +494,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     tz.TZDateTime(tz.local, dtAlarmDayTime.year, dtAlarmDayTime.month,
         dtAlarmDayTime.day, dtAlarmDayTime.hour, dtAlarmDayTime.minute);
 
+   // String _sound = ;
     await flutterLocalNotificationsPlugin.zonedSchedule(
         alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
         scheduledDate,
@@ -475,13 +503,20 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
                 'your channel id', 'your channel name',
                 channelDescription: 'your channel description',
                 priority: Priority.high,
-                playSound: false,
+                playSound: true,
+                sound:UriAndroidNotificationSound('file:///storage/emulated/0/Music/HE-LOW/HE-LOW/07 - 勝利の未来.mp3'),
                 importance: Importance.high,
                 fullScreenIntent: true
             )), androidAllowWhileIdle: true,
         payload: alarmNo.toString(),
         uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation
             .absoluteTime);
+
+    ///音楽再生時刻設定
+    //拡張用filelistno = alarmno
+    //await AndroidAlarmManager.oneShotAt(dtAlarmDayTime, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+
+
   }
   Future<void> judgeAlarm(int alarmNo, bool isAlarmOn) async{
     ///アラームIDの生成（固定の接頭辞＋アラームNo）
@@ -514,7 +549,6 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
 
     //ここでランダム範囲を設定(1 以上 lcMaxNo 未満)
     lcRandomNo = randomIntWithRange(1, lcMaxNo + 1);
-    debugPrint('RandomNo:$lcRandomNo');
     return lcRandomNo;
   }
 
@@ -528,7 +562,6 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     for (Map item in lcMapPlayList) {
       lcMaxNo = (item['maxNo'] != null) ? item['maxNo'] : 0;
     }
-    debugPrint('MaxNo:$lcMaxNo');
     return lcMaxNo;
   }
 
