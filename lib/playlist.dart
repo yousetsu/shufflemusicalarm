@@ -148,7 +148,7 @@ MusicFolderデータ取得
     List<FileSystemEntity>  plist = pDir.listSync(recursive: true);
 
     for( var item in plist! ){
-      final reg = RegExp(r'\.mp3|\.MP3|\.m4a|\.wav|\.WAV');
+      final reg = RegExp(r'\.mp3|\.MP3|\.wav|\.WAV');
       if(reg.hasMatch(item.path)) {
         mapMusicFolder.add({
           'No': no,
