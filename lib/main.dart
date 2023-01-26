@@ -26,13 +26,16 @@ List<Map> mapAlarmList = <Map>[];
 int notificationType = 0;
 bool testFLG = false;
 ///android_alarm_manager_plusで必要な定義
-FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 //didpop使う為
 final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
+
 /*------------------------------------------------------------------
 全共通のメソッド
  -------------------------------------------------------------------*/
+
 //初回起動分の処理
+@pragma('vm:entry-point')
 Future<void> firstRun() async {
   String dbpath = await getDatabasesPath();
   //設定テーブル作成
@@ -54,164 +57,35 @@ Future<void> firstRun() async {
     //print("Opening existing database");
   }
 }
-@pragma('vm:entry-point')
-Future<void> playSound() async {
-  int playNo = 0;
-  debugPrint('スタート！');
 
-  ///PlaylistからNOを取得し、ランダムで1つ返す
-  playNo = await getPlayListRandomNo(0);
 
-  ///そのナンバーからpath名を取得
-  String musicPath = await getPlayListPath(playNo);
-  debugPrint('no:$playNo  path:$musicPath ');
-
-  ///ここでmusicを鳴らす
-  _player = AudioPlayer();
-  await _player.setLoopMode(LoopMode.all);
-  await _player.setFilePath(musicPath);
-  await _player.play();
-}
 
 @pragma('vm:entry-point')
-Future<void> stopSound() async {
-  debugPrint('ストップ！');
-  await _player.stop();
-}
-
 Future<void> getAlarmData(int alarmNo) async {
 
   String dbPath = await getDatabasesPath();
   String path = p.join(dbPath, 'internal_assets.db');
   Database database = await openDatabase(path, version: 1);
-  List<Map> alarmResetMap = await database.rawQuery("SELECT * From alarmList where alarmno = $alarmNo");
+  alarmResetMap = await database.rawQuery("SELECT * From alarmList where alarmno = $alarmNo");
 
 }
 
-void onDidReceiveNotificationResponse(NotificationResponse notificationResponse) async {
-  final String? payload = notificationResponse.payload;
-  int alarmID = 0;
-  int alarmNo = 0;
-  if (notificationResponse.payload != null) {
-    alarmNo = int.parse(payload.toString());
-    debugPrint('notification payload: $payload');
-    alarmID = int.parse(cnsPreAlarmId + payload.toString());
-  }
-  debugPrint('タップされました！');
-  ///アラームを止める
-  await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
 
-  ///止めたら次のアラームを設定する
-  //次回のアラーム時刻を算出する
-  //最終的なアラーム設定日時
-  DateTime dtAlarmDayTime = DateTime.now();
-
-  String strTime = '';
-  int intMonFlg = 0;
-  int intTueFlg = 0;
-  int intWedFlg = 0;
-  int intThuFlg = 0;
-  int intFriFlg = 0;
-  int intSatFlg = 0;
-  int intSunFlg = 0;
-
-  //アラームテーブルから曜日と時刻を取り出す。
-  await getAlarmData(alarmNo);
-  for(Map item in alarmResetMap ){
-    strTime = item['time'].toString();
-    intMonFlg = item['mon'];
-    intTueFlg = item['tue'];
-    intWedFlg = item['wed'];
-    intThuFlg = item['thu'];
-    intFriFlg = item['fri'];
-    intSatFlg = item['sat'];
-    intSunFlg = item['sun'];
-  }
-
-  //その情報を元に明日の起床時刻を割り出す。
-
-  debugPrint('strTime:$strTime');
-  debugPrint('Mon:$intMonFlg');
-  debugPrint('Tue:$intTueFlg');
-  debugPrint('Wed:$intWedFlg');
-  debugPrint('Thu:$intThuFlg');
-  DateTime dtTime = DateTime.parse(strTime);
-  DateTime dtNowTime = DateTime.now();
-  bool monFlg = false;bool tueFlg = false;bool wedFlg = false;
-  bool thuFlg = false;bool friFlg = false;
-  bool satFlg = false;bool sunFlg = false;
-
-  monFlg = (intMonFlg == cnsFlgOn)?true:false;
-  tueFlg = (intTueFlg == cnsFlgOn)?true:false;
-  wedFlg = (intWedFlg == cnsFlgOn)?true:false;
-  thuFlg = (intThuFlg == cnsFlgOn)?true:false;
-  friFlg = (intFriFlg == cnsFlgOn)?true:false;
-  satFlg = (intSatFlg == cnsFlgOn)?true:false;
-  sunFlg = (intSunFlg == cnsFlgOn)?true:false;
-
-  //次の日の起床時刻を算出
-  DateTime dtBaseTime = DateTime(dtNowTime.year,dtNowTime.month,dtNowTime.day,dtTime.hour,dtTime.minute).add(const Duration(days: 1));
-
-  //曜日を考慮した時刻を算出
-  DateTime dtNextAlarmTime = calAlarDay(dtBaseTime,monFlg,tueFlg,wedFlg,thuFlg,friFlg,satFlg,sunFlg);
-
-  debugPrint('次設定する日:$dtNextAlarmTime');
-
-   ///音楽再生時刻設定
-   await AndroidAlarmManager.oneShotAt(dtNextAlarmTime, alarmID, playSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-   tz.initializeTimeZones();
-   final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
-   tz.setLocalLocation(tz.getLocation(timeZoneName));
-
-   ///通知バー時刻設定
-   final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-   tz.TZDateTime scheduledDate =
-   tz.TZDateTime(tz.local, dtNextAlarmTime.year, dtNextAlarmTime.month, dtNextAlarmTime.day, dtNextAlarmTime.hour,dtNextAlarmTime.minute);
-
-  await flutterLocalNotificationsPlugin.zonedSchedule(
-      alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
-      scheduledDate,
-      const NotificationDetails(
-          android: AndroidNotificationDetails('your channel id', 'your channel name',
-              channelDescription: 'your channel description',
-              priority: Priority.high, playSound:false, importance: Importance.high, fullScreenIntent: true
-          )), androidAllowWhileIdle: true,
-      payload: alarmID.toString(),
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime);
-
-
-}
+@pragma('vm:entry-point')
 void main() async{
 
-  //SQLflite + android_alarm_manager_plusで必要
+  //SQLflite + android_alarm_manager_plusで必要  main関数内で非同期処理するときの決まり文句らしい
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint('main通過');
   ///android_alarm_manager_plusで必要
   await AndroidAlarmManager.initialize();
   ///android_alarm_manager_plusで必要な初期設定
-   // //Android13だと通知を要求するか聞いてくれるらしい？
-   flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestPermission();
-   const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
-   //OSごとに初期化をする(今はandroidのみ)
-   final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
-   //通知バーをタップしたら飛ぶメソッドを定義する
-   await flutterLocalNotificationsPlugin.initialize(initializationSettings,
-     onDidReceiveNotificationResponse:onDidReceiveNotificationResponse);
 
-  NotificationAppLaunchDetails? _lanuchDeatil =await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
-
-  if (_lanuchDeatil!=null){
-    if (_lanuchDeatil.didNotificationLaunchApp) {
-
-      debugPrint('タップから呼ばれたぜ！');
-      //await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-    }else {
-      debugPrint('タップから呼ばなかったよ・・・');
-    }
-  }
   await firstRun();
   runApp(const MyApp());
 }
+
+@pragma('vm:entry-point')
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
@@ -232,19 +106,136 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+@pragma('vm:entry-point')
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
+
+@pragma('vm:entry-point')
 class _MainScreenState extends State<MainScreen> with RouteAware {
   bool isAlarmOn = false;
   Key? listViewKey;
+
+  @pragma('vm:entry-point')
   @override
-  void initState() {
+  void initState() async{
     super.initState();
     init();
+    await alarmtest();
   }
+  @pragma('vm:entry-point')
+  Future<void> playSound() async {
+    int playNo = 0;
+    debugPrint('スタート！');
+
+    ///PlaylistからNOを取得し、ランダムで1つ返す
+    playNo = await getPlayListRandomNo(0);
+
+    ///そのナンバーからpath名を取得
+    String musicPath = await getPlayListPath(playNo);
+    debugPrint('no:$playNo  path:$musicPath ');
+
+    ///ここでmusicを鳴らす
+    _player = AudioPlayer();
+    await _player.setLoopMode(LoopMode.all);
+    await _player.setFilePath(musicPath);
+    await _player.play();
+  }
+
+  @pragma('vm:entry-point')
+  static  stopSound() async {
+    debugPrint('ストップ！');
+    await _player.stop();
+  }
+  @pragma('vm:entry-point')
+  void onDidReceiveNotificationResponse(NotificationResponse notificationResponse) async {
+    final String? payload = notificationResponse.payload;
+    int alarmID = 0;
+    int alarmNo = 0;
+    if (notificationResponse.payload != null) {
+      alarmNo = int.parse(payload.toString());
+      debugPrint('notification payload: $payload');
+      alarmID = int.parse(cnsPreAlarmId + payload.toString());
+    }
+    debugPrint('タップされました！');
+    ///アラームを止める
+    debugPrint('アラームを止めます！:$alarmID');
+    await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+    debugPrint('アラームを止まってますかね？');
+    ///止めたら次のアラームを設定する
+    //次回のアラーム時刻を算出する
+    //最終的なアラーム設定日時
+    String strTime = '';
+    int intMonFlg = 0;int intTueFlg = 0;int intWedFlg = 0;int intThuFlg = 0;
+    int intFriFlg = 0;int intSatFlg = 0;int intSunFlg = 0;
+    //アラームテーブルから曜日と時刻を取り出す。
+    await getAlarmData(alarmNo);
+    for(Map item in alarmResetMap ){
+      strTime = item['time'].toString();
+      intMonFlg = item['mon'];
+      intTueFlg = item['tue'];
+      intWedFlg = item['wed'];
+      intThuFlg = item['thu'];
+      intFriFlg = item['fri'];
+      intSatFlg = item['sat'];
+      intSunFlg = item['sun'];
+    }
+
+    //その情報を元に明日の起床時刻を割り出す。
+
+    debugPrint('strTime:$strTime');
+    debugPrint('Mon:$intMonFlg');
+    debugPrint('Tue:$intTueFlg');
+    debugPrint('Wed:$intWedFlg');
+    debugPrint('Thu:$intThuFlg');
+    DateTime dtTime = DateTime.parse(strTime);
+    DateTime dtNowTime = DateTime.now();
+    bool monFlg = false;bool tueFlg = false;bool wedFlg = false;
+    bool thuFlg = false;bool friFlg = false;
+    bool satFlg = false;bool sunFlg = false;
+
+    monFlg = (intMonFlg == cnsFlgOn)?true:false;
+    tueFlg = (intTueFlg == cnsFlgOn)?true:false;
+    wedFlg = (intWedFlg == cnsFlgOn)?true:false;
+    thuFlg = (intThuFlg == cnsFlgOn)?true:false;
+    friFlg = (intFriFlg == cnsFlgOn)?true:false;
+    satFlg = (intSatFlg == cnsFlgOn)?true:false;
+    sunFlg = (intSunFlg == cnsFlgOn)?true:false;
+
+    //次の日の起床時刻を算出
+    DateTime dtBaseTime = DateTime(dtNowTime.year,dtNowTime.month,dtNowTime.day,dtTime.hour,dtTime.minute).add(const Duration(days: 1));
+
+    //曜日を考慮した時刻を算出
+    DateTime dtNextAlarmTime = calAlarDay(dtBaseTime,monFlg,tueFlg,wedFlg,thuFlg,friFlg,satFlg,sunFlg);
+
+    debugPrint('次設定する日:$dtNextAlarmTime');
+
+    ///音楽再生時刻設定
+    await AndroidAlarmManager.oneShotAt(dtNextAlarmTime, alarmID, playSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+    tz.initializeTimeZones();
+    final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(timeZoneName));
+
+    ///通知バー時刻設定
+    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime scheduledDate =
+    tz.TZDateTime(tz.local, dtNextAlarmTime.year, dtNextAlarmTime.month, dtNextAlarmTime.day, dtNextAlarmTime.hour,dtNextAlarmTime.minute);
+
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+        alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
+        scheduledDate,
+        const NotificationDetails(
+            android: AndroidNotificationDetails('your channel id', 'your channel name',
+                channelDescription: 'your channel description',
+                priority: Priority.high, playSound:false, importance: Importance.high, fullScreenIntent: true
+            )), androidAllowWhileIdle: true,
+        payload: alarmID.toString(),
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime);
+
+  }
+
   @override
   void didChangeDependencies() { // 遷移時に呼ばれる関数
     // routeObserverに自身を設定(didPopのため)
@@ -521,6 +512,115 @@ Future<void> permissionCheck() async{
 
 
 }
+Future<void> alarmtest() async{
+  //Android13だと通知を要求するか聞いてくれるらしい？
+  flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestPermission();
+  const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+  //OSごとに初期化をする(今はandroidのみ)
+  final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
+  //通知バーをタップしたら飛ぶメソッドを定義する
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings,
+      onDidReceiveNotificationResponse:onDidReceiveNotificationResponse);
 
+  NotificationAppLaunchDetails? _lanuchDeatil =await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+  if (_lanuchDeatil!=null){
+    if (_lanuchDeatil.didNotificationLaunchApp) {
+
+      String? payload = _lanuchDeatil!.notificationResponse?.payload;
+      debugPrint('バックグラウンドからタップで呼ばれたぜ！payload:$payload');
+      int alarmID = 0;
+      int alarmNo = 0;
+
+      if (payload != null) {
+        alarmNo = int.parse(payload);
+        debugPrint('notification payload: $payload');
+        alarmID = int.parse(cnsPreAlarmId + payload);
+      }
+      ///アラームを止める
+      debugPrint('アラームを止めます！:$alarmID');
+      await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+      debugPrint('アラームを止まってますかね？');
+      ///止めたら次のアラームを設定する
+      //次回のアラーム時刻を算出する
+      String strTime = '';
+      int intMonFlg = 0;int intTueFlg = 0;int intWedFlg = 0;int intThuFlg = 0;int intFriFlg = 0;int intSatFlg = 0;int intSunFlg = 0;
+      //アラームテーブルから曜日と時刻を取り出す。
+      await getAlarmData(alarmNo);
+      for(Map item in alarmResetMap ){
+        strTime = item['time'].toString();
+        intMonFlg = item['mon'];intTueFlg = item['tue'];intWedFlg = item['wed'];
+        intThuFlg = item['thu'];intFriFlg = item['fri'];intSatFlg = item['sat'];intSunFlg = item['sun'];
+      }
+
+      //その情報を元に明日の起床時刻を割り出す。
+      debugPrint('strTime:$strTime');debugPrint('Mon:$intMonFlg');debugPrint('Tue:$intTueFlg');debugPrint('Wed:$intWedFlg');debugPrint('Thu:$intThuFlg');
+
+      DateTime dtTime = DateTime.parse(strTime);
+      DateTime dtNowTime = DateTime.now();
+      bool monFlg = false;bool tueFlg = false;bool wedFlg = false;
+      bool thuFlg = false;bool friFlg = false;bool satFlg = false;bool sunFlg = false;
+
+      monFlg = (intMonFlg == cnsFlgOn)?true:false;tueFlg = (intTueFlg == cnsFlgOn)?true:false;
+      wedFlg = (intWedFlg == cnsFlgOn)?true:false;thuFlg = (intThuFlg == cnsFlgOn)?true:false;
+      friFlg = (intFriFlg == cnsFlgOn)?true:false;satFlg = (intSatFlg == cnsFlgOn)?true:false;
+      sunFlg = (intSunFlg == cnsFlgOn)?true:false;
+
+      //次の日の起床時刻を算出
+      DateTime dtBaseTime = DateTime(dtNowTime.year,dtNowTime.month,dtNowTime.day,dtTime.hour,dtTime.minute).add(const Duration(days: 1));
+
+      //曜日を考慮した時刻を算出
+      DateTime dtNextAlarmTime = calAlarDay(dtBaseTime,monFlg,tueFlg,wedFlg,thuFlg,friFlg,satFlg,sunFlg);
+
+      debugPrint('次設定する日:$dtNextAlarmTime');
+
+      ///音楽再生時刻設定
+      await AndroidAlarmManager.oneShotAt(dtNextAlarmTime, alarmID, playSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+      tz.initializeTimeZones();
+      final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+
+      ///通知バー時刻設定
+      final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+      tz.TZDateTime scheduledDate =
+      tz.TZDateTime(tz.local, dtNextAlarmTime.year, dtNextAlarmTime.month, dtNextAlarmTime.day, dtNextAlarmTime.hour,dtNextAlarmTime.minute);
+
+      await flutterLocalNotificationsPlugin.zonedSchedule(
+          alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
+          scheduledDate,
+          const NotificationDetails(
+              android: AndroidNotificationDetails('your channel id', 'your channel name',
+                  channelDescription: 'your channel description',
+                  priority: Priority.high, playSound:false, importance: Importance.high, fullScreenIntent: true
+              )), androidAllowWhileIdle: true,
+          payload: alarmID.toString(),
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime);
+    }else {
+      debugPrint('タップから呼ばなかったよ・・・');
+    }
+  }
+}
+}
+@pragma('vm:entry-point')
+Future<void> playSound1() async {
+  int playNo = 0;
+  debugPrint('スタート！');
+
+  ///PlaylistからNOを取得し、ランダムで1つ返す
+  playNo = await getPlayListRandomNo(0);
+
+  ///そのナンバーからpath名を取得
+  String musicPath = await getPlayListPath(playNo);
+  debugPrint('no:$playNo  path:$musicPath ');
+
+  ///ここでmusicを鳴らす
+  _player = AudioPlayer();
+  await _player.setLoopMode(LoopMode.all);
+  await _player.setFilePath(musicPath);
+  await _player.play();
 }
 
+@pragma('vm:entry-point')
+stopSound1() async {
+  debugPrint('ストップ！');
+  await _player.stop();
+}

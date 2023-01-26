@@ -1,3 +1,4 @@
+@pragma('vm:entry-point')
 DateTime calAlarDay(DateTime ltBaseDay, bool monFlg, bool tueFlg, bool wedFlg,
     bool thuFlg, bool friFlg, bool satFlg, bool sunFlg,) {
   DateTime ltDtAlarmDayTime = ltBaseDay;
@@ -68,3 +69,4 @@ DateTime calAlarDay(DateTime ltBaseDay, bool monFlg, bool tueFlg, bool wedFlg,
   }
   return ltDtAlarmDayTime;
 }
+

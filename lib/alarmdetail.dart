@@ -38,18 +38,14 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
   String buttonName = '登録';
   String playListSelButtonText = '';
   bool playListFlg = false;
-  bool monFlg = false;
-  bool tueFlg = false;
-  bool wedFlg = false;
-  bool thuFlg = false;
-  bool friFlg = false;
-  bool satFlg = false;
-  bool sunFlg = false;
+  bool monFlg = false;bool tueFlg = false;bool wedFlg = false;
+  bool thuFlg = false;bool friFlg = false;bool satFlg = false;bool sunFlg = false;
   bool isAlarmOn = false;
   bool timePress = false;
 
-  @override
+
   @pragma('vm:entry-point')
+  @override
   void initState() {
     super.initState();
     init();
@@ -400,25 +396,22 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
           satFlg,
           sunFlg);
 
-      debugPrint('保存時：$dtAlarmDayTime');
+      debugPrint('保存時：$dtAlarmDayTime   alarmID:$alarmID');
 
       ///音楽再生時刻設定
-      await AndroidAlarmManager.oneShotAt(
-          dtAlarmDayTime, alarmID, playSound, exact: true,
-          wakeup: true,
-          alarmClock: true,
-          allowWhileIdle: true);
+      await AndroidAlarmManager.oneShotAt(dtAlarmDayTime, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+
+      ///通知バー時刻設定
       tz.initializeTimeZones();
       final String timeZoneName = await FlutterNativeTimezone
           .getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(timeZoneName));
 
-      final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+     // final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
       tz.TZDateTime scheduledDate =
       tz.TZDateTime(tz.local, dtAlarmDayTime.year, dtAlarmDayTime.month,
           dtAlarmDayTime.day, dtAlarmDayTime.hour, dtAlarmDayTime.minute);
 
-      ///通知バー時刻設定
       await flutterLocalNotificationsPlugin.zonedSchedule(
           alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
           scheduledDate,
@@ -435,9 +428,9 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
           uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation
               .absoluteTime);
     } else {
-      await flutterLocalNotificationsPlugin.cancel(0);
+      await flutterLocalNotificationsPlugin.cancel(alarmID);
       await AndroidAlarmManager.oneShot(
-          const Duration(seconds: 0), alarmID, stopSound, exact: true,
+          const Duration(seconds: 0), alarmID, stopSound1, exact: true,
           wakeup: true,
           alarmClock: true,
           allowWhileIdle: true);
