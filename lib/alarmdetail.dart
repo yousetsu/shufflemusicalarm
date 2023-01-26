@@ -291,27 +291,21 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
                   ),
                 ),
                const Padding(padding: EdgeInsets.all(10)),
-              ]
-          ),
+              ]),
         ),
       ),
     );
   }
 
   void switchChange(value) {
-    setState(() {
-      isAlarmOn = value;
-    },);
+    setState(() {isAlarmOn = value;},);
   }
 
   void buttonPressed() async {
-    int intMax = 0;
-
     ///曜日必須チェック
-    if(chkWeek(context,monFlg,tueFlg,wedFlg,thuFlg,friFlg,satFlg,sunFlg) == false){
+    if(chkWeek(context,monFlg,tueFlg,wedFlg,thuFlg,friFlg,satFlg,sunFlg) == false) {
       return;
     }
-
     ///アラームファイル必須チェック
     if (playListFlg == false) {
       showDialog(context: context,
@@ -322,89 +316,28 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
             actions: <Widget>[
               TextButton(onPressed: () => { Navigator.pop(context)},
                 child: const Text('閉じる'),),
-            ],
-          );
-        },
-      );
+            ],);},);
       return;
     }
     ///更新処理
     //拡張予定（第一引数：アラームNo,第二引数：ファイルリストNo)
      await updateAlarmData(alarmNo,alarmNo);
+    ///アラーム処理
+    await judgeAlarm(alarmNo,isAlarmOn);
 
-    ///アラームIDの生成（固定の接頭辞＋アラームNo）
-    String strAlarmID = cnsPreAlarmId + alarmNo.toString();
-    int alarmID = int.parse(strAlarmID);
-
-    if (isAlarmOn) {
-      ///時刻設定処理(AndroidAlarmManager)
-      //時刻を現在時刻と比較する
-      DateTime dtNow = DateTime.now();
-      DateTime dtSetTime = DateTime(dtNow.year, dtNow.month, dtNow.day, _time.hour, _time.minute);
-      DateTime dtBaseDay = DateTime.now();
-
-      //最終的なアラーム設定日時
-      DateTime dtAlarmDayTime = DateTime.now();
-      if (dtSetTime.isAfter(dtNow)) {
-        // 設定時刻が現在の時刻よりも後の場合、今日設定
-        dtBaseDay = dtSetTime;
-      } else {
-        // 設定時刻が現在の時刻よりも前の場合、明日
-        dtBaseDay = dtSetTime.add(const Duration(days: 1));
-      }
-
-      //対象の曜日になるまで設定時刻を繰り返す(共通化)
-      dtAlarmDayTime = calAlarDay(dtBaseDay, monFlg, tueFlg, wedFlg, thuFlg, friFlg, satFlg, sunFlg);
-
-      debugPrint('保存時：$dtAlarmDayTime   alarmID:$alarmID');
-
-      ///音楽再生時刻設定
-      Map<String, dynamic> paraMap = {'filelistno':alarmNo}; //拡張用filelistno = alarmno
-
-      await AndroidAlarmManager.oneShotAt(dtAlarmDayTime, alarmID,  playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-
-      ///通知バー時刻設定
-      tz.initializeTimeZones();
-      final String timeZoneName = await FlutterNativeTimezone
-          .getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(timeZoneName));
-
-     // final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-      tz.TZDateTime scheduledDate =
-      tz.TZDateTime(tz.local, dtAlarmDayTime.year, dtAlarmDayTime.month,
-          dtAlarmDayTime.day, dtAlarmDayTime.hour, dtAlarmDayTime.minute);
-
-      await flutterLocalNotificationsPlugin.zonedSchedule(
-          alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
-          scheduledDate,
-          const NotificationDetails(
-              android: AndroidNotificationDetails(
-                  'your channel id', 'your channel name',
-                  channelDescription: 'your channel description',
-                  priority: Priority.high,
-                  playSound: false,
-                  importance: Importance.high,
-                  fullScreenIntent: true
-              )), androidAllowWhileIdle: true,
-          payload: alarmNo.toString(),
-          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation
-              .absoluteTime);
-    } else {
-      await flutterLocalNotificationsPlugin.cancel(alarmID);
-      await AndroidAlarmManager.oneShot(
-          const Duration(seconds: 0), alarmID, stopSound1, exact: true,
-          wakeup: true,
-          alarmClock: true,
-          allowWhileIdle: true);
-    }
     Navigator.pop(context);
   }
+
+
 
   void musicSelButtonPressed() async {
     int fileListNo = alarmNo;  //拡張用（fileListNo　= alarmno）
 
     //拡張予定（第一引数：アラームNo,第二引数：ファイルリストNo)
     updateAlarmData(alarmNo,alarmNo);
+
+    ///アラーム処理(画面遷移するまえにアラームON/OFFによって判断する)
+    judgeAlarm(alarmNo,isAlarmOn);
 
     Navigator.push(context, MaterialPageRoute(builder: (context) => playListEditScreen(fileListNo)),);
   }
@@ -500,7 +433,76 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
       await txn.rawInsert(query);
     });
   }
+  Future<void> setAlarm(int alarmID) async{
+    ///時刻設定処理(AndroidAlarmManager)
+    //時刻を現在時刻と比較する
+    DateTime dtNow = DateTime.now();
+    DateTime dtSetTime = DateTime(
+        dtNow.year, dtNow.month, dtNow.day, _time.hour, _time.minute);
+    DateTime dtBaseDay = DateTime.now();
 
+    //最終的なアラーム設定日時
+    DateTime dtAlarmDayTime = DateTime.now();
+    if (dtSetTime.isAfter(dtNow)) {
+      // 設定時刻が現在の時刻よりも後の場合、今日設定
+      dtBaseDay = dtSetTime;
+    } else {
+      // 設定時刻が現在の時刻よりも前の場合、明日
+      dtBaseDay = dtSetTime.add(const Duration(days: 1));
+    }
+    //対象の曜日になるまで設定時刻を繰り返す(共通化)
+    dtAlarmDayTime = calAlarDay(dtBaseDay, monFlg, tueFlg, wedFlg, thuFlg, friFlg, satFlg, sunFlg);
+    debugPrint('保存時：$dtAlarmDayTime   alarmID:$alarmID');
+
+    ///音楽再生時刻設定
+    //拡張用filelistno = alarmno
+    await AndroidAlarmManager.oneShotAt(dtAlarmDayTime, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+    ///通知バー時刻設定
+    tz.initializeTimeZones();
+    final String timeZoneName = await FlutterNativeTimezone
+        .getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(timeZoneName));
+
+    tz.TZDateTime scheduledDate =
+    tz.TZDateTime(tz.local, dtAlarmDayTime.year, dtAlarmDayTime.month,
+        dtAlarmDayTime.day, dtAlarmDayTime.hour, dtAlarmDayTime.minute);
+
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+        alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
+        scheduledDate,
+        const NotificationDetails(
+            android: AndroidNotificationDetails(
+                'your channel id', 'your channel name',
+                channelDescription: 'your channel description',
+                priority: Priority.high,
+                playSound: false,
+                importance: Importance.high,
+                fullScreenIntent: true
+            )), androidAllowWhileIdle: true,
+        payload: alarmNo.toString(),
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation
+            .absoluteTime);
+  }
+  Future<void> judgeAlarm(int alarmNo, bool isAlarmOn) async{
+    ///アラームIDの生成（固定の接頭辞＋アラームNo）
+    String strAlarmID = cnsPreAlarmId + alarmNo.toString();
+    int alarmID = int.parse(strAlarmID);
+    if (isAlarmOn) {
+      ///アラーム取消(先に取消しておく)
+      await cancelAlarm(alarmID);
+      ///アラームオン
+      await setAlarm(alarmID);
+    } else {
+      ///アラーム取消
+      await cancelAlarm(alarmID);
+    }
+  }
+  Future<void> cancelAlarm(int alarmID) async{
+    //通知の取消
+    await flutterLocalNotificationsPlugin.cancel(alarmID);
+    //音楽再生の取消
+    AndroidAlarmManager.cancel(alarmID);
+  }
 }
 //-------------------------------------------------------------
 //   DB処理

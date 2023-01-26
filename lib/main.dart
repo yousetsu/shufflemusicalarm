@@ -412,13 +412,11 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
             ),
             trailing: PopupMenuButton(
               itemBuilder: (context) {
-                return lists.map((String list) {return PopupMenuItem(value: list, child: Text(list),);
-                }).toList();
+                return lists.map((String list) {return PopupMenuItem(value: list, child: Text(list),);}).toList();
               },
               onSelected: (String list) {
                 switch (list) {
-                  case '削除':
-                    delAlarmList(item['alarmno']);
+                  case '削除':delAlarmList(item['alarmno']);
                     break;
                 }
               },
