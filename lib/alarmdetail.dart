@@ -504,7 +504,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
                 channelDescription: 'your channel description',
                 priority: Priority.high,
                 playSound: true,
-                sound:UriAndroidNotificationSound('file:///storage/emulated/0/Music/HE-LOW/HE-LOW/07 - 勝利の未来.mp3'),
+                sound:UriAndroidNotificationSound('content://storage/emulated/0/Music/HE-LOW/HE-LOW/07 - 勝利の未来.mp3'),
                 importance: Importance.high,
                 fullScreenIntent: true
             )), androidAllowWhileIdle: true,
