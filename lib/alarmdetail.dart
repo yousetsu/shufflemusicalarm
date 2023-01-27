@@ -494,7 +494,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     tz.TZDateTime(tz.local, dtAlarmDayTime.year, dtAlarmDayTime.month,
         dtAlarmDayTime.day, dtAlarmDayTime.hour, dtAlarmDayTime.minute);
 
-   // String _sound = ;
+    String _sound = 'alarm';
     await flutterLocalNotificationsPlugin.zonedSchedule(
         alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
         scheduledDate,
@@ -502,9 +502,10 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
             android: AndroidNotificationDetails(
                 'shuffleMusicAlarm', 'シャッフル音楽アラームの通知',
                 channelDescription: 'シャッフル音楽アラームの通知',
-                priority: Priority.high,
+                priority: Priority.max,
                 playSound: true,
-                sound:UriAndroidNotificationSound("assets/alarm.mp3"),
+               // sound:RawResourceAndroidNotificationSound('alarm'),
+                 sound:UriAndroidNotificationSound("assets/alarm.mp3"),
                 importance: Importance.high,
                 fullScreenIntent: true
             )), androidAllowWhileIdle: true,

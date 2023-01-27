@@ -214,6 +214,11 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
       await alarmStopNextSet(payload);
     }
   }
+  @pragma('vm:entry-point')
+  void onDidReceiveBackgroundNotificationResponse(NotificationResponse notificationResponse) async {
+    debugPrint('テストーーーーー');
+
+  }
   @override
   void didChangeDependencies() { // 遷移時に呼ばれる関数
     // routeObserverに自身を設定(didPopのため)
@@ -537,7 +542,8 @@ void tapAlarmSet() async{
   final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
   //通知バーをタップしたら飛ぶメソッドを定義する
   await flutterLocalNotificationsPlugin.initialize(initializationSettings,
-      onDidReceiveNotificationResponse:onDidReceiveNotificationResponse);
+      onDidReceiveNotificationResponse:onDidReceiveNotificationResponse,
+      onDidReceiveBackgroundNotificationResponse:onDidReceiveBackgroundNotificationResponse);
 
   NotificationAppLaunchDetails? _lanuchDeatil =await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
   if (_lanuchDeatil!=null){
