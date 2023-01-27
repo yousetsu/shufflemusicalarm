@@ -500,12 +500,12 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
         scheduledDate,
         const NotificationDetails(
             android: AndroidNotificationDetails(
-                'your channel id', 'your channel name',
-                channelDescription: 'your channel description',
+                'shuffleMusicAlarm', 'シャッフル音楽アラームの通知',
+                channelDescription: 'シャッフル音楽アラームの通知',
                 priority: Priority.high,
                 playSound: true,
                 sound:UriAndroidNotificationSound("assets/alarm.mp3"),
-                importance: Importance.max,
+                importance: Importance.high,
                 fullScreenIntent: true
             )), androidAllowWhileIdle: true,
         payload: alarmNo.toString(),
