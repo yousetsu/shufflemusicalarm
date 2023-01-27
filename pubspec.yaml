@@ -42,6 +42,7 @@ flutter:
 
   assets:
     - assets/exShuffle.db
+    - assets/alarm.mp3
 
 
 flutter_icons:
