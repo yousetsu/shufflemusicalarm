@@ -26,27 +26,27 @@ class AlarmDetailScreen extends StatefulWidget {
 }
 @pragma('vm:entry-point')
 class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
-  //バナー広告初期化
-  final BannerAd myBanner = BannerAd(
-    adUnitId : strCnsBannerID,
-    size: AdSize.banner,
-    request: const AdRequest(),
-    listener: BannerAdListener(
-      onAdLoaded: (Ad ad) => print('バナー広告がロードされました'),
-      // Called when an ad request failed.
-      onAdFailedToLoad: (Ad ad, LoadAdError error) {
-        // Dispose the ad here to free resources.
-        ad.dispose();
-        //  print('バナー広告の読み込みが次の理由で失敗しました: $error');
-      },
-      // Called when an ad opens an overlay that covers the screen.
-      onAdOpened: (Ad ad) => print('バナー広告が開かれました'),
-      // Called when an ad removes an overlay that covers the screen.
-      onAdClosed: (Ad ad) => print('バナー広告が閉じられました'),
-      // Called when an impression occurs on the ad.
-      onAdImpression: (Ad ad) => print('Ad impression.'),
-    ),
-  );
+  //バナー広告初期化  TODO
+  // final BannerAd myBanner = BannerAd(
+  //   adUnitId : strCnsBannerID,
+  //   size: AdSize.banner,
+  //   request: const AdRequest(),
+  //   listener: BannerAdListener(
+  //     onAdLoaded: (Ad ad) => print('バナー広告がロードされました'),
+  //     // Called when an ad request failed.
+  //     onAdFailedToLoad: (Ad ad, LoadAdError error) {
+  //       // Dispose the ad here to free resources.
+  //       ad.dispose();
+  //       //  print('バナー広告の読み込みが次の理由で失敗しました: $error');
+  //     },
+  //     // Called when an ad opens an overlay that covers the screen.
+  //     onAdOpened: (Ad ad) => print('バナー広告が開かれました'),
+  //     // Called when an ad removes an overlay that covers the screen.
+  //     onAdClosed: (Ad ad) => print('バナー広告が閉じられました'),
+  //     // Called when an impression occurs on the ad.
+  //     onAdImpression: (Ad ad) => print('Ad impression.'),
+  //   ),
+  // );
   String mode = '';
   int alarmNo = 0;
 
@@ -101,15 +101,15 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    //動画バナーロード
-    myBanner.load();
-    final AdWidget adWidget = AdWidget(ad: myBanner);
-    final Container adContainer = Container(
-      alignment: Alignment.center,
-      width: myBanner.size.width.toDouble(),
-      height: myBanner.size.height.toDouble(),
-      child: adWidget,
-    );
+    //動画バナーロード TODO
+    //myBanner.load();
+    // final AdWidget adWidget = AdWidget(ad: myBanner);
+    // final Container adContainer = Container(
+    //   alignment: Alignment.center,
+    //   width: myBanner.size.width.toDouble(),
+    //   height: myBanner.size.height.toDouble(),
+    //   child: adWidget,
+    // );
 
     return Scaffold(
       appBar: AppBar(
@@ -320,7 +320,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
                   ),
                 ),
                const Padding(padding: EdgeInsets.all(15)),
-                adContainer,
+                //adContainer, TODO
                 const Padding(padding: EdgeInsets.all(10)),
               ]),
         ),
@@ -474,7 +474,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
 
     //最終的なアラーム設定日時
     DateTime dtAlarmDayTime = DateTime.now();
-    if (dtSetTime.isAfter(dtNow)) {
+    if (dtSetTime.isAfter(dtNow)) { //設定時刻 > 現在時刻
       // 設定時刻が現在の時刻よりも後の場合、今日設定
       dtBaseDay = dtSetTime;
     } else {
@@ -483,6 +483,9 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     }
     //対象の曜日になるまで設定時刻を繰り返す(共通化)
     dtAlarmDayTime = calAlarDay(dtBaseDay, monFlg, tueFlg, wedFlg, thuFlg, friFlg, satFlg, sunFlg);
+    ///音楽再生時刻設定
+    //拡張用filelistno = alarmno
+
 
     ///通知バー時刻設定
     tz.initializeTimeZones();
@@ -494,7 +497,6 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     tz.TZDateTime(tz.local, dtAlarmDayTime.year, dtAlarmDayTime.month,
         dtAlarmDayTime.day, dtAlarmDayTime.hour, dtAlarmDayTime.minute);
 
-    String _sound = 'alarm';
     await flutterLocalNotificationsPlugin.zonedSchedule(
         alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
         scheduledDate,
@@ -502,10 +504,8 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
             android: AndroidNotificationDetails(
                 'shuffleMusicAlarm', 'シャッフル音楽アラームの通知',
                 channelDescription: 'シャッフル音楽アラームの通知',
-                priority: Priority.max,
-                playSound: true,
-               // sound:RawResourceAndroidNotificationSound('alarm'),
-                 sound:UriAndroidNotificationSound("assets/alarm.mp3"),
+                priority: Priority.high,
+                playSound: false,
                 importance: Importance.high,
                 fullScreenIntent: true
             )), androidAllowWhileIdle: true,
@@ -513,10 +513,12 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
         uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation
             .absoluteTime);
 
-    ///音楽再生時刻設定
-    //拡張用filelistno = alarmno
-    //await AndroidAlarmManager.oneShotAt(dtAlarmDayTime, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-
+    //3秒delay
+    //(立ち上げっぱなしの人用。通常の流れではない。)
+    DateTime dtAlarmDayTimeDeley3 = dtAlarmDayTime.add(Duration(seconds: 3));
+    await AndroidAlarmManager.oneShotAt(dtAlarmDayTimeDeley3, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+    // await AndroidAlarmManager.oneShotAt(dtAlarmDayTime, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+    // await AndroidAlarmManager.oneShot(const Duration(minutes: 1), alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
 
   }
   Future<void> judgeAlarm(int alarmNo, bool isAlarmOn) async{

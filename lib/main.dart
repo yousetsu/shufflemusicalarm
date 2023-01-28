@@ -19,8 +19,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 RewardedAd? _rewardedAd;
 const int maxFailedLoadAttempts = 3;
-late AudioPlayer _player;
-
+late AudioPlayer _player = AudioPlayer();
 List<Widget> listWedgetitems = <Widget>[];
 List<Map> alarmResetMap = <Map>[];
 List<Map> mapAlarmList = <Map>[];
@@ -30,7 +29,7 @@ bool testFLG = false;
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 //didpop使う為
 final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
-
+bool  playFlg = false;
 /*------------------------------------------------------------------
 全共通のメソッド
  -------------------------------------------------------------------*/
@@ -68,12 +67,13 @@ Future<void> getAlarmData(int alarmNo) async {
 }
 @pragma('vm:entry-point')
 void main() async{
-
+  debugPrint('main通過');
   //SQLflite + android_alarm_manager_plusで必要  main関数内で非同期処理するときの決まり文句らしい
   WidgetsFlutterBinding.ensureInitialized();
   ///android_alarm_manager_plusで必要
   await AndroidAlarmManager.initialize();
   ///android_alarm_manager_plusで必要な初期設定
+
 
   await firstRun();
   runApp(const MyApp());
@@ -118,8 +118,8 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
   void initState() {
     super.initState();
     init();
-    tapAlarmSet();
-    _createRewardedAd();
+    initAlarm();
+   // _createRewardedAd();
   }
   Future<void> alarmStopNextSet(String? payload)async{
     int alarmID = 0;
@@ -182,43 +182,118 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
         uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime);
   }
   @pragma('vm:entry-point')
+  Future<void> playSoundChek(int alarmID) async {
+    debugPrint('プレイしてますか？state:${_player.playerState.playing.toString()}');
+  }
+  @pragma('vm:entry-point')
   Future<void> playSound(int alarmID) async {
     int playNo = 0;
     String strAlarmID = alarmID.toString();
     strAlarmID = strAlarmID.replaceFirst(cnsPreAlarmId, '');
     int playListNo = int.parse(strAlarmID);//拡張(アラームNO = プレイリストNo)
 
-
     ///PlaylistからNOを取得し、ランダムで1つ返す
     playNo = await getPlayListRandomNo(playListNo);
     ///そのナンバーからpath名を取得
     String musicPath = await getPlayListPath(playNo,playListNo);
 
-
     ///ここでmusicを鳴らす
-    _player = AudioPlayer();
+
     await _player.setLoopMode(LoopMode.all);
     await _player.setFilePath(musicPath);
     await _player.play();
   }
-
   @pragma('vm:entry-point')
   static  stopSound() async {
+    debugPrint('stopsound');
     await _player.stop();
   }
   @pragma('vm:entry-point')
   void onDidReceiveNotificationResponse(NotificationResponse notificationResponse) async {
+
     final String? payload = notificationResponse.payload;
     if (notificationResponse.payload != null) {
-      ///タップされたので、アラームを止めて、次回のアラームを設定する
-      await alarmStopNextSet(payload);
+      int alarmID = 0;
+      int alarmNo = 0;
+
+      if (payload != null) {
+        alarmNo = int.parse(payload);
+        alarmID = int.parse(cnsPreAlarmId + payload);
+      }
+      debugPrint('音楽停止');
+       await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+
+      //   await alarmStopNextSet(payload);
     }
-  }
-  @pragma('vm:entry-point')
-  void onDidReceiveBackgroundNotificationResponse(NotificationResponse notificationResponse) async {
-    debugPrint('テストーーーーー');
 
   }
+  @pragma('vm:entry-point')
+  void initAlarm() async {
+    //Android13だと通知を要求するか聞いてくれるらしい？
+    flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>()?.requestPermission();
+    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings(
+        '@mipmap/ic_launcher');
+    //OSごとに初期化をする(今はandroidのみ)
+    final InitializationSettings initializationSettings = InitializationSettings(
+        android: initializationSettingsAndroid);
+    //通知バーをタップしたら飛ぶメソッドを定義する
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings,
+        onDidReceiveNotificationResponse: onDidReceiveNotificationResponse);
+
+    NotificationAppLaunchDetails? _lanuchDeatil = await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+    if (_lanuchDeatil != null) {
+      if (_lanuchDeatil.didNotificationLaunchApp) {
+        String? payload = _lanuchDeatil!.notificationResponse?.payload;
+        int alarmID = 0;
+        int alarmNo = 0;
+        if (payload != null) {
+          alarmNo = int.parse(payload);
+          alarmID = int.parse(cnsPreAlarmId + payload);
+        }
+
+
+        //スマホ自体がスリープだと通知が出ないので以下の処理をする。
+        //通知とアラームを取り消す
+
+        ///プレイヤーが起動していなかったら(通常パターン(アプリが終了してて、スマホがスリープ))
+        debugPrint('プレイしてますか？state:${_player.playerState.playing.toString()}');
+        await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, playSoundChek, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+
+        if(_player.playerState.playing == false){
+
+          debugPrint('通知とアラームを取り消す');
+          await flutterLocalNotificationsPlugin.cancel(alarmID);
+          await AndroidAlarmManager.cancel(alarmID);
+
+        //再度showする
+        await flutterLocalNotificationsPlugin.show(
+            alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
+            const NotificationDetails(android: AndroidNotificationDetails(
+                'shuffleMusicAlarm', 'シャッフル音楽アラームの通知',
+                channelDescription: 'シャッフル音楽アラームの通知',
+                priority: Priority.high,
+                playSound: false,
+                importance: Importance.high,
+                fullScreenIntent: true)),
+            payload: payload);
+        //音楽を即時起動させる
+        debugPrint('音楽即時起動');
+        await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+        debugPrint('initのdidNotificationLaunchApp');
+        //    await alarmStopNextSet(payload);
+      }
+        ///プレイヤーが起動している()
+        else{
+          debugPrint('アプリが終了してて、スマホが立ち上がっているレアパターンstate:${_player.playerState.playing.toString()}');
+          await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+
+        }
+
+      }
+    }
+  }
+
   @override
   void didChangeDependencies() { // 遷移時に呼ばれる関数
     // routeObserverに自身を設定(didPopのため)
@@ -260,7 +335,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
   //  Navigator.push(context, MaterialPageRoute(builder: (context) => AlarmDetailScreen(cnsAlarmDetailScreenIns,-1)),);
     int intMax = await getMaxAlarmNo();
     //アラームが3個以上なら動画視聴
-    _showRewardedAd(intMax + 1);
+//    _showRewardedAd(intMax + 1); TODO
     await insertAlarmData(intMax + 1); //拡張予定（引数にファイルリストNoを追加）
     init();
   }
@@ -447,16 +522,40 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
 初期処理
  -------------------------------------------------------------------*/
   void init() async {
+  //  TODO
+    debugPrint('init通過');
     // await  testEditDB();
-    await permissionAllCheck();
+  //  await permissionAllCheck();
  //   permissionCheckGroup();
  //   permissionCheckReadAudio();
   //  permissionCheckmanageExternalStorage();
  //   permissionCheckStorage();
+  //  permissionCheckmanageAudioGroup();
     await loadList();
     await getItems();
   }
-  Future<void>permissionCheckGroup() async{
+  Future<void>permissionCheckmanageAudioGroup() async {
+    Map<Permission, PermissionStatus> statuses;
+
+    var   statusvideos = await Permission.videos.status;
+    var  statusphotos = await Permission.photos.status;
+    var  statusaudio= await Permission.audio.status;
+    if (statusvideos != PermissionStatus.granted
+        || statusphotos != PermissionStatus.granted
+        || statusaudio != PermissionStatus.granted
+    ) {
+      statuses = await [
+        Permission.videos,
+        Permission.photos,
+        Permission.audio,
+      ].request();
+    }
+    debugPrint('videos:$statusvideos');
+    debugPrint('photos:$statusphotos');
+    debugPrint('audio:$statusaudio');
+
+  }
+    Future<void>permissionCheckGroup() async{
 
     Map<Permission, PermissionStatus> statuses;
 
@@ -534,26 +633,7 @@ Future<void> permissionAllCheck() async{
   debugPrint('ExternalStorage:$statusaccessmanageExternalStorage');
 }
 
-void tapAlarmSet() async{
-  //Android13だと通知を要求するか聞いてくれるらしい？
-  flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestPermission();
-  const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
-  //OSごとに初期化をする(今はandroidのみ)
-  final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
-  //通知バーをタップしたら飛ぶメソッドを定義する
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings,
-      onDidReceiveNotificationResponse:onDidReceiveNotificationResponse,
-      onDidReceiveBackgroundNotificationResponse:onDidReceiveBackgroundNotificationResponse);
 
-  NotificationAppLaunchDetails? _lanuchDeatil =await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
-  if (_lanuchDeatil!=null){
-    if (_lanuchDeatil.didNotificationLaunchApp) {
-      String? payload = _lanuchDeatil!.notificationResponse?.payload;
-      ///タップされたので、アラームを止めて、次回のアラームを設定する
-      await alarmStopNextSet(payload);
-    }
-  }
-}
 /*------------------------------------------------------------------
 動画準備
  -------------------------------------------------------------------*/
@@ -614,25 +694,47 @@ void tapAlarmSet() async{
 Future<void> playSound1(int alarmID) async {
   int playNo = 0;
 
-  String strAlarmID = alarmID.toString();
-  strAlarmID = strAlarmID.replaceFirst(cnsPreAlarmId, '');
-  int playListNo = int.parse(strAlarmID);//拡張(アラームNO = プレイリストNo)
+  //1分ごとに再設定
+ // await AndroidAlarmManager.cancel(alarmID);
 
-  ///PlaylistからNOを取得し、ランダムで1つ返す
-  playNo = await getPlayListRandomNo(playListNo);
-  ///そのナンバーからpath名を取得
-  String musicPath = await getPlayListPath(playNo,playListNo);
+  DateTime dtNowTime = DateTime.now();
+  debugPrint('playSound1起動時刻:$dtNowTime ');
+//  DateTime dtGetupTime = DateTime(dtNowTime.year,dtNowTime.month,dtNowTime.day,12,54,0);
+ // debugPrint('dtGetupTime:$dtGetupTime dtNowTime:$dtNowTime ');
+  //時間になったかを判定する。
+  //起床時刻 > 現在時刻
+  // if(dtGetupTime.isAfter(dtNowTime)) {
+  //   debugPrint("まだです。");
+  //   await AndroidAlarmManager.oneShot(const Duration(minutes: 1), alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+  // }else{
 
-  debugPrint('musicPath:$musicPath');
+    debugPrint("時間になりました！");
+    //時間になったら音を鳴らす
+    String strAlarmID = alarmID.toString();
+    strAlarmID = strAlarmID.replaceFirst(cnsPreAlarmId, '');
+    int playListNo = int.parse(strAlarmID);//拡張(アラームNO = プレイリストNo)
 
-  ///ここでmusicを鳴らす
-  _player = AudioPlayer();
-  await _player.setLoopMode(LoopMode.all);
-  await _player.setFilePath(musicPath);
-  await _player.play();
+    ///PlaylistからNOを取得し、ランダムで1つ返す
+    playNo = await getPlayListRandomNo(playListNo);
+    ///そのナンバーからpath名を取得
+    String musicPath = await getPlayListPath(playNo,playListNo);
+
+   debugPrint('musicPath:$musicPath');
+
+    ///ここでmusicを鳴らす
+    await _player.setLoopMode(LoopMode.all);
+    await _player.setFilePath(musicPath);
+  debugPrint('state:${_player.playerState.toString()}');
+  debugPrint('play');
+    await _player.play();
+  debugPrint('state:${_player.playerState.toString()}');
+ // }
 }
 
 @pragma('vm:entry-point')
 stopSound1() async {
+  debugPrint('state:${_player.playerState.toString()}');
+  debugPrint('stopsound1');
   await _player.stop();
+  debugPrint('state:${_player.playerState.toString()}');
 }
