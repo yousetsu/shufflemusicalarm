@@ -252,44 +252,13 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
           alarmID = int.parse(cnsPreAlarmId + payload);
         }
 
-
+        debugPrint('initAlarm :通知から立ち上げました！');
         //スマホ自体がスリープだと通知が出ないので以下の処理をする。
         //通知とアラームを取り消す
-
         ///プレイヤーが起動していなかったら(通常パターン(アプリが終了してて、スマホがスリープ))
-        debugPrint('プレイしてますか？state:${_player.playerState.playing.toString()}');
-        await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, playSoundChek, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-
-        if(_player.playerState.playing == false){
-
-          debugPrint('通知とアラームを取り消す');
-          await flutterLocalNotificationsPlugin.cancel(alarmID);
-          await AndroidAlarmManager.cancel(alarmID);
-
-        //再度showする
-        await flutterLocalNotificationsPlugin.show(
-            alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
-            const NotificationDetails(android: AndroidNotificationDetails(
-                'shuffleMusicAlarm', 'シャッフル音楽アラームの通知',
-                channelDescription: 'シャッフル音楽アラームの通知',
-                priority: Priority.high,
-                playSound: false,
-                importance: Importance.high,
-                fullScreenIntent: true)),
-            payload: payload);
-        //音楽を即時起動させる
-        debugPrint('音楽即時起動');
-        await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-        debugPrint('initのdidNotificationLaunchApp');
-        //    await alarmStopNextSet(payload);
-      }
-        ///プレイヤーが起動している()
-        else{
-          debugPrint('アプリが終了してて、スマホが立ち上がっているレアパターンstate:${_player.playerState.playing.toString()}');
-          await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-
-        }
-
+        await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, playStop, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+      }else{
+        debugPrint('initAlarm :通常起動です');
       }
     }
   }
@@ -707,8 +676,6 @@ Future<void> playSound1(int alarmID) async {
   //   debugPrint("まだです。");
   //   await AndroidAlarmManager.oneShot(const Duration(minutes: 1), alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
   // }else{
-
-    debugPrint("時間になりました！");
     //時間になったら音を鳴らす
     String strAlarmID = alarmID.toString();
     strAlarmID = strAlarmID.replaceFirst(cnsPreAlarmId, '');
@@ -724,17 +691,49 @@ Future<void> playSound1(int alarmID) async {
     ///ここでmusicを鳴らす
     await _player.setLoopMode(LoopMode.all);
     await _player.setFilePath(musicPath);
-  debugPrint('state:${_player.playerState.toString()}');
   debugPrint('play');
     await _player.play();
-  debugPrint('state:${_player.playerState.toString()}');
  // }
 }
 
 @pragma('vm:entry-point')
 stopSound1() async {
-  debugPrint('state:${_player.playerState.toString()}');
   debugPrint('stopsound1');
   await _player.stop();
-  debugPrint('state:${_player.playerState.toString()}');
+}
+@pragma('vm:entry-point')
+Future<void> playStop(int alarmID) async {
+  int playNo = 0;
+
+  DateTime dtNowTime = DateTime.now();
+  debugPrint('playStop起動時刻:$dtNowTime ');
+
+  debugPrint('プレイしてますか？state:${_player.playerState.playing.toString()}');
+  if(_player.playerState.playing == false){
+    debugPrint('通知とアラームを取り消す');
+    await flutterLocalNotificationsPlugin.cancel(alarmID);
+    await AndroidAlarmManager.cancel(alarmID);
+
+    //再度showする
+    await flutterLocalNotificationsPlugin.show(
+        alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
+        const NotificationDetails(android: AndroidNotificationDetails(
+            'shuffleMusicAlarm', 'シャッフル音楽アラームの通知',
+            channelDescription: 'シャッフル音楽アラームの通知',
+            priority: Priority.high,
+            playSound: false,
+            importance: Importance.high,
+            fullScreenIntent: true)),
+        payload: alarmID.toString());
+    //音楽を即時起動させる
+    debugPrint('音楽即時起動');
+    await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+    debugPrint('initのdidNotificationLaunchApp');
+    //    await alarmStopNextSet(payload);
+  } else{
+    ///プレイヤーが起動している
+    debugPrint('アプリが終了してて、スマホが立ち上がっているレアパターンstate:${_player.playerState.playing.toString()}');
+    await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+  }
+
 }
