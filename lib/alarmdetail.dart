@@ -504,10 +504,10 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
             android: AndroidNotificationDetails(
                 'shuffleMusicAlarm', 'シャッフル音楽アラームの通知',
                 channelDescription: 'シャッフル音楽アラームの通知',
-                priority: Priority.high,
+                priority: Priority.max,
                 playSound: false,
-                importance: Importance.high,
-                fullScreenIntent: true
+                importance: Importance.max,
+              //  fullScreenIntent: true
             )), androidAllowWhileIdle: true,
         payload: alarmNo.toString(),
         uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation
@@ -515,10 +515,11 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
 
     //3秒delay
     //(立ち上げっぱなしの人用。通常の流れではない。)
-    DateTime dtAlarmDayTimeDeley3 = dtAlarmDayTime.add(Duration(seconds: 3));
-    await AndroidAlarmManager.oneShotAt(dtAlarmDayTimeDeley3, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-    // await AndroidAlarmManager.oneShotAt(dtAlarmDayTime, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-    // await AndroidAlarmManager.oneShot(const Duration(minutes: 1), alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+   //  DateTime dtAlarmDayTimeDeley3 = dtAlarmDayTime.add(Duration(seconds: 3));
+   //  await AndroidAlarmManager.oneShotAt(dtAlarmDayTimeDeley3, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+    //delayなし
+     await AndroidAlarmManager.oneShotAt(dtAlarmDayTime, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+     // await AndroidAlarmManager.oneShot(const Duration(minutes: 1), alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
 
   }
   Future<void> judgeAlarm(int alarmNo, bool isAlarmOn) async{

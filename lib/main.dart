@@ -121,66 +121,66 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
     initAlarm();
    // _createRewardedAd();
   }
-  Future<void> alarmStopNextSet(String? payload)async{
-    int alarmID = 0;
-    int alarmNo = 0;
-
-    if (payload != null) {
-      alarmNo = int.parse(payload);
-      alarmID = int.parse(cnsPreAlarmId + payload);
-    }
-    ///アラームを止める
-    await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-    ///止めたら次のアラームを設定する
-    //次回のアラーム時刻を算出する
-    String strTime = '';
-    int intMonFlg = 0;int intTueFlg = 0;int intWedFlg = 0;int intThuFlg = 0;int intFriFlg = 0;int intSatFlg = 0;int intSunFlg = 0;
-    //アラームテーブルから曜日と時刻を取り出す。
-    await getAlarmData(alarmNo);
-    for(Map item in alarmResetMap ){
-      strTime = item['time'].toString();
-      intMonFlg = item['mon'];intTueFlg = item['tue'];intWedFlg = item['wed'];
-      intThuFlg = item['thu'];intFriFlg = item['fri'];intSatFlg = item['sat'];intSunFlg = item['sun'];
-    }
-
-    //その情報を元に明日の起床時刻を割り出す。
-    DateTime dtTime = DateTime.parse(strTime);
-    DateTime dtNowTime = DateTime.now();
-    bool monFlg = false;bool tueFlg = false;bool wedFlg = false;
-    bool thuFlg = false;bool friFlg = false;bool satFlg = false;bool sunFlg = false;
-
-    monFlg = (intMonFlg == cnsFlgOn)?true:false;tueFlg = (intTueFlg == cnsFlgOn)?true:false;
-    wedFlg = (intWedFlg == cnsFlgOn)?true:false;thuFlg = (intThuFlg == cnsFlgOn)?true:false;
-    friFlg = (intFriFlg == cnsFlgOn)?true:false;satFlg = (intSatFlg == cnsFlgOn)?true:false;
-    sunFlg = (intSunFlg == cnsFlgOn)?true:false;
-
-    //次の日の起床時刻を算出
-    DateTime dtBaseTime = DateTime(dtNowTime.year,dtNowTime.month,dtNowTime.day,dtTime.hour,dtTime.minute).add(const Duration(days: 1));
-
-    //曜日を考慮した時刻を算出
-    DateTime dtNextAlarmTime = calAlarDay(dtBaseTime,monFlg,tueFlg,wedFlg,thuFlg,friFlg,satFlg,sunFlg);
-
-    ///音楽再生時刻設定
-    await AndroidAlarmManager.oneShotAt(dtNextAlarmTime, alarmID, playSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-    tz.initializeTimeZones();
-    final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(timeZoneName));
-
-    ///通知バー時刻設定
-    tz.TZDateTime scheduledDate =
-    tz.TZDateTime(tz.local, dtNextAlarmTime.year, dtNextAlarmTime.month, dtNextAlarmTime.day, dtNextAlarmTime.hour,dtNextAlarmTime.minute);
-
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-        alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
-        scheduledDate,
-        const NotificationDetails(
-            android: AndroidNotificationDetails('your channel id', 'your channel name',
-                channelDescription: 'your channel description',
-                priority: Priority.high, playSound:false, importance: Importance.high, fullScreenIntent: true
-            )), androidAllowWhileIdle: true,
-        payload: alarmID.toString(),
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime);
-  }
+  // Future<void> alarmStopNextSet(String? payload)async{
+  //   int alarmID = 0;
+  //   int alarmNo = 0;
+  //
+  //   if (payload != null) {
+  //     alarmNo = int.parse(payload);
+  //     alarmID = int.parse(cnsPreAlarmId + payload);
+  //   }
+  //   ///アラームを止める
+  //   await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+  //   ///止めたら次のアラームを設定する
+  //   //次回のアラーム時刻を算出する
+  //   String strTime = '';
+  //   int intMonFlg = 0;int intTueFlg = 0;int intWedFlg = 0;int intThuFlg = 0;int intFriFlg = 0;int intSatFlg = 0;int intSunFlg = 0;
+  //   //アラームテーブルから曜日と時刻を取り出す。
+  //   await getAlarmData(alarmNo);
+  //   for(Map item in alarmResetMap ){
+  //     strTime = item['time'].toString();
+  //     intMonFlg = item['mon'];intTueFlg = item['tue'];intWedFlg = item['wed'];
+  //     intThuFlg = item['thu'];intFriFlg = item['fri'];intSatFlg = item['sat'];intSunFlg = item['sun'];
+  //   }
+  //
+  //   //その情報を元に明日の起床時刻を割り出す。
+  //   DateTime dtTime = DateTime.parse(strTime);
+  //   DateTime dtNowTime = DateTime.now();
+  //   bool monFlg = false;bool tueFlg = false;bool wedFlg = false;
+  //   bool thuFlg = false;bool friFlg = false;bool satFlg = false;bool sunFlg = false;
+  //
+  //   monFlg = (intMonFlg == cnsFlgOn)?true:false;tueFlg = (intTueFlg == cnsFlgOn)?true:false;
+  //   wedFlg = (intWedFlg == cnsFlgOn)?true:false;thuFlg = (intThuFlg == cnsFlgOn)?true:false;
+  //   friFlg = (intFriFlg == cnsFlgOn)?true:false;satFlg = (intSatFlg == cnsFlgOn)?true:false;
+  //   sunFlg = (intSunFlg == cnsFlgOn)?true:false;
+  //
+  //   //次の日の起床時刻を算出
+  //   DateTime dtBaseTime = DateTime(dtNowTime.year,dtNowTime.month,dtNowTime.day,dtTime.hour,dtTime.minute).add(const Duration(days: 1));
+  //
+  //   //曜日を考慮した時刻を算出
+  //   DateTime dtNextAlarmTime = calAlarDay(dtBaseTime,monFlg,tueFlg,wedFlg,thuFlg,friFlg,satFlg,sunFlg);
+  //
+  //   ///音楽再生時刻設定
+  //   await AndroidAlarmManager.oneShotAt(dtNextAlarmTime, alarmID, playSound,exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+  //   tz.initializeTimeZones();
+  //   final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
+  //   tz.setLocalLocation(tz.getLocation(timeZoneName));
+  //
+  //   ///通知バー時刻設定
+  //   tz.TZDateTime scheduledDate =
+  //   tz.TZDateTime(tz.local, dtNextAlarmTime.year, dtNextAlarmTime.month, dtNextAlarmTime.day, dtNextAlarmTime.hour,dtNextAlarmTime.minute);
+  //
+  //   await flutterLocalNotificationsPlugin.zonedSchedule(
+  //       alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
+  //       scheduledDate,
+  //       const NotificationDetails(
+  //           android: AndroidNotificationDetails('your channel id', 'your channel name',
+  //               channelDescription: 'your channel description',
+  //               priority: Priority.high, playSound:false, importance: Importance.high, fullScreenIntent: true
+  //           )), androidAllowWhileIdle: true,
+  //       payload: alarmID.toString(),
+  //       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime);
+  // }
   @pragma('vm:entry-point')
   Future<void> playSoundChek(int alarmID) async {
     debugPrint('プレイしてますか？state:${_player.playerState.playing.toString()}');
@@ -222,7 +222,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
       }
       debugPrint('音楽停止');
        await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-
       //   await alarmStopNextSet(payload);
     }
 
@@ -256,7 +255,9 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
         //スマホ自体がスリープだと通知が出ないので以下の処理をする。
         //通知とアラームを取り消す
         ///プレイヤーが起動していなかったら(通常パターン(アプリが終了してて、スマホがスリープ))
-        await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, playStop, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+
+        await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+
       }else{
         debugPrint('initAlarm :通常起動です');
       }
@@ -284,6 +285,7 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
   }
   @override
   Widget build(BuildContext context) {
+    permissionCheckWriteExternalStorage();
     return Scaffold(
       appBar: AppBar(title: const Text('シャッフル音楽アラーム'),backgroundColor: const Color(0xFF6495ed),),
       body: Column(
@@ -497,8 +499,11 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
   //  await permissionAllCheck();
  //   permissionCheckGroup();
  //   permissionCheckReadAudio();
-  //  permissionCheckmanageExternalStorage();
- //   permissionCheckStorage();
+
+  //  permissionCheckmanageExternalStorage();//ファイルアクセスの全権限を要求してくる。かならずアクセスできるがこれは流石にダメ。
+ //   permissionCheckWriteExternalStorage();
+
+    //   permissionCheckStorage();
   //  permissionCheckmanageAudioGroup();
     await loadList();
     await getItems();
@@ -572,11 +577,23 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
       status = await Permission.storage.request();
     }
   }
-  Future<void>permissionCheckmanageExternalStorage() async {
-    var status = await Permission.audio.status;
-    if (status != PermissionStatus.granted) {
-      status = await Permission.audio.request();
+  Future<void>permissionCheckWriteExternalStorage() async {
+    //WRITEストレージの要求がない？これ？
+    if (await Permission.storage.request().isGranted) {
+      // Either the permission was already granted before or the user just granted it.
     }
+    // var status = await Permission.storage.status;
+    // if (status != PermissionStatus.granted) {
+    //   status = await Permission.storage.request();
+    // }
+    // debugPrint('storage:$status');
+  }
+  Future<void>permissionCheckmanageExternalStorage() async {
+    var status = await Permission.manageExternalStorage.status;
+    if (status != PermissionStatus.granted) {
+      status = await Permission.manageExternalStorage.request();
+    }
+
     // 権限がない場合の処理.
     // if (status != PermissionStatus.granted) {
     //   showDialog(context: context,
@@ -667,7 +684,7 @@ Future<void> playSound1(int alarmID) async {
  // await AndroidAlarmManager.cancel(alarmID);
 
   DateTime dtNowTime = DateTime.now();
-  debugPrint('playSound1起動時刻:$dtNowTime ');
+  debugPrint('playSound1(3秒ディレイ)起動時刻:$dtNowTime ');
 //  DateTime dtGetupTime = DateTime(dtNowTime.year,dtNowTime.month,dtNowTime.day,12,54,0);
  // debugPrint('dtGetupTime:$dtGetupTime dtNowTime:$dtNowTime ');
   //時間になったかを判定する。
@@ -702,38 +719,42 @@ stopSound1() async {
   await _player.stop();
 }
 @pragma('vm:entry-point')
-Future<void> playStop(int alarmID) async {
-  int playNo = 0;
-
-  DateTime dtNowTime = DateTime.now();
-  debugPrint('playStop起動時刻:$dtNowTime ');
-
-  debugPrint('プレイしてますか？state:${_player.playerState.playing.toString()}');
-  if(_player.playerState.playing == false){
-    debugPrint('通知とアラームを取り消す');
-    await flutterLocalNotificationsPlugin.cancel(alarmID);
-    await AndroidAlarmManager.cancel(alarmID);
-
-    //再度showする
-    await flutterLocalNotificationsPlugin.show(
-        alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
-        const NotificationDetails(android: AndroidNotificationDetails(
-            'shuffleMusicAlarm', 'シャッフル音楽アラームの通知',
-            channelDescription: 'シャッフル音楽アラームの通知',
-            priority: Priority.high,
-            playSound: false,
-            importance: Importance.high,
-            fullScreenIntent: true)),
-        payload: alarmID.toString());
-    //音楽を即時起動させる
-    debugPrint('音楽即時起動');
-    await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-    debugPrint('initのdidNotificationLaunchApp');
-    //    await alarmStopNextSet(payload);
-  } else{
-    ///プレイヤーが起動している
-    debugPrint('アプリが終了してて、スマホが立ち上がっているレアパターンstate:${_player.playerState.playing.toString()}');
-    await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-  }
-
+stopSleep() async {
+  debugPrint('スリープさせんぞ！');
 }
+// @pragma('vm:entry-point')
+// Future<void> playStop(int alarmID) async {
+//   int playNo = 0;
+//
+//   DateTime dtNowTime = DateTime.now();
+//   debugPrint('playStopチェック起動時刻:$dtNowTime ');
+//
+//   debugPrint('playStopチェックプレイしてますか？state:${_player.playerState.playing.toString()}');
+//   if(_player.playerState.playing == false){
+//     debugPrint('playStopチェック通知とアラームを取り消す');
+//     await flutterLocalNotificationsPlugin.cancel(alarmID);
+//     await AndroidAlarmManager.cancel(alarmID);
+//
+//     //再度showする
+//     await flutterLocalNotificationsPlugin.show(
+//         alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
+//         const NotificationDetails(android: AndroidNotificationDetails(
+//             'shuffleMusicAlarm', 'シャッフル音楽アラームの通知',
+//             channelDescription: 'シャッフル音楽アラームの通知',
+//             priority: Priority.high,
+//             playSound: false,
+//             importance: Importance.high,
+//             fullScreenIntent: true)),
+//         payload: alarmID.toString());
+//     //音楽を即時起動させる
+//     debugPrint('playStopチェック音楽即時起動');
+//     await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+//     //    await alarmStopNextSet(payload);
+//   } else{
+//     ///プレイヤーが起動している
+//     debugPrint('アプリが終了してて、スマホが立ち上がっているレアパターンstate:${_player.playerState.playing.toString()}');
+//     debugPrint('playStopチェック音楽即停止');
+//     await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+//   }
+//
+// }
