@@ -1,14 +1,12 @@
 name: shufflemusicalarm
 description: shuffle music alarm
 
-
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: '>=2.18.6 <3.0.0'
-
 
 dependencies:
   flutter:
@@ -31,10 +29,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-
   flutter_lints: ^2.0.0
-
 
 flutter:
 
@@ -42,8 +37,6 @@ flutter:
 
   assets:
     - assets/exShuffle.db
-    - assets/alarm.mp3
-
 
 flutter_icons:
   android: true
