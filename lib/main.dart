@@ -65,13 +65,11 @@ Future<void> getAlarmData(int alarmNo) async {
 }
 @pragma('vm:entry-point')
 void main() async{
-  debugPrint('main通過');
   //SQLflite + android_alarm_manager_plusで必要  main関数内で非同期処理するときの決まり文句らしい
   WidgetsFlutterBinding.ensureInitialized();
   ///android_alarm_manager_plusで必要
   await AndroidAlarmManager.initialize();
   ///android_alarm_manager_plusで必要な初期設定
-
   await firstRun();
   runApp(const MyApp());
 }
@@ -127,7 +125,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
         if (payload != null) {
           alarmID = int.parse(cnsPreAlarmId + payload);
         }
-        debugPrint('音楽停止');
         //音楽停止
         await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
       }
@@ -149,13 +146,8 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
           if (payload != null) {
             alarmID = int.parse(cnsPreAlarmId + payload);
           }
-          debugPrint('initAlarm :通知から立ち上げました！');
           ///音楽停止
-          debugPrint('音楽停止 :alarmID:$alarmIDで音楽停止');
           await AndroidAlarmManager.oneShot(const Duration(seconds: 0), alarmID, stopSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-
-        } else {
-          debugPrint('initAlarm :通常起動です');
         }
       }
     }
@@ -407,7 +399,6 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
 初期処理
  -------------------------------------------------------------------*/
     void init() async {
-      debugPrint('init通過');
       //  permissionCheckmanageExternalStorage();//ファイルアクセスの全権限を要求してくる。かならずアクセスできるがこれは流石にダメ。
       await loadList();
       await getItems();
@@ -482,7 +473,6 @@ TOPレベル関数
 Future<void> playSound1(int alarmID) async {
   int playNo = 0;
   DateTime dtNowTime = DateTime.now();
-  debugPrint('playSound1起動時刻:$dtNowTime ');
     String strAlarmID = alarmID.toString();
     strAlarmID = strAlarmID.replaceFirst(cnsPreAlarmId, '');
     int playListNo = int.parse(strAlarmID);//拡張(アラームNO = プレイリストNo)
@@ -490,19 +480,15 @@ Future<void> playSound1(int alarmID) async {
     playNo = await getPlayListRandomNo(playListNo);
     ///そのナンバーからpath名を取得
     String musicPath = await getPlayListPath(playNo,playListNo);
-   debugPrint('musicPath:$musicPath');
     ///ここでmusicを鳴らす
     await _player.setLoopMode(LoopMode.all);
     await _player.setFilePath(musicPath);
-    debugPrint('play');
     await _player.play();
  // }
 }
 @pragma('vm:entry-point')
 stopSound1(int alarmID) async {
-  debugPrint('stopsound1');
   await _player.stop();
-
   ///次回のアラームを設定
   await alarmNextSet(alarmID);
 }
@@ -535,8 +521,6 @@ Future<void> permissionCheckWriteExternalStorage() async {
 Future<void> alarmNextSet(int alarmID) async {
 
   int alarmNo = int.parse(alarmID.toString().replaceFirst(cnsPreAlarmId, ''));
-
-  debugPrint('alarmNextSet alarmNo:$alarmNo  alarmID:$alarmID' );
   ///次回のアラーム時刻を算出する
   String strTime = '';
   int intMonFlg = 0;int intTueFlg = 0;int intWedFlg = 0;
@@ -566,7 +550,6 @@ Future<void> alarmNextSet(int alarmID) async {
       dtTime.minute).add(const Duration(days: 1));
   //曜日を考慮した時刻を算出
   DateTime dtNextAlarmTime = calAlarDay(dtBaseTime, monFlg, tueFlg, wedFlg, thuFlg, friFlg, satFlg, sunFlg);
-  debugPrint('alarmNextSet dtNextAlarmTime:$dtNextAlarmTime' );
   ///音楽再生時刻設定
   await AndroidAlarmManager.oneShotAt(dtNextAlarmTime, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
   ///通知セット

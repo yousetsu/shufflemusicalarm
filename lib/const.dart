@@ -4,7 +4,6 @@ const String cnsAlarmDetailScreenUpd = 'upd';
 const int cnsFlgOff = 0; ///アラームoff
 const int cnsFlgOn = 1; ///アラームon
 
-
 const String cnsPreAlarmId          = '20230131';
 
 //広告ID

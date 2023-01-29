@@ -482,7 +482,6 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     ///通知時刻設定
     await notificationSchedule(alarmID,alarmNo,dtAlarmDayTime);
     ///音楽時刻設定
-    debugPrint('alarmID:$alarmID,$dtAlarmDayTimeで音楽セット');
     await AndroidAlarmManager.oneShotAt(dtAlarmDayTime, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
 
   }
@@ -501,7 +500,6 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     }
   }
   Future<void> cancelAlarm(int alarmID) async{
-    debugPrint('alarmID:$alarmID を取消');
     //通知の取消
     await flutterLocalNotificationsPlugin.cancel(alarmID);
     //音楽再生の取消
@@ -556,7 +554,6 @@ Future<void> _requestPermissions() async {
   flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
       AndroidFlutterLocalNotificationsPlugin>();
   final bool? granted = await androidImplementation?.requestPermission();
-  debugPrint('通知権限:$granted');
   if(granted == false) {
     await flutterLocalNotificationsPlugin.show(
         123456, 'シャッフル音楽アラーム通知許可', 'シャッフル音楽アラームは通知を使います',
