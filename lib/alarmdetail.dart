@@ -9,9 +9,6 @@ import 'dart:math' as math;
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import './main.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import './globalmethod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -26,27 +23,27 @@ class AlarmDetailScreen extends StatefulWidget {
 }
 @pragma('vm:entry-point')
 class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
-  //バナー広告初期化  TODO
-  // final BannerAd myBanner = BannerAd(
-  //   adUnitId : strCnsBannerID,
-  //   size: AdSize.banner,
-  //   request: const AdRequest(),
-  //   listener: BannerAdListener(
-  //     onAdLoaded: (Ad ad) => print('バナー広告がロードされました'),
-  //     // Called when an ad request failed.
-  //     onAdFailedToLoad: (Ad ad, LoadAdError error) {
-  //       // Dispose the ad here to free resources.
-  //       ad.dispose();
-  //       //  print('バナー広告の読み込みが次の理由で失敗しました: $error');
-  //     },
-  //     // Called when an ad opens an overlay that covers the screen.
-  //     onAdOpened: (Ad ad) => print('バナー広告が開かれました'),
-  //     // Called when an ad removes an overlay that covers the screen.
-  //     onAdClosed: (Ad ad) => print('バナー広告が閉じられました'),
-  //     // Called when an impression occurs on the ad.
-  //     onAdImpression: (Ad ad) => print('Ad impression.'),
-  //   ),
-  // );
+  //バナー広告初期化
+  final BannerAd myBanner = BannerAd(
+    adUnitId : strCnsBannerID,
+    size: AdSize.banner,
+    request: const AdRequest(),
+    listener: BannerAdListener(
+      onAdLoaded: (Ad ad) => print('バナー広告がロードされました'),
+      // Called when an ad request failed.
+      onAdFailedToLoad: (Ad ad, LoadAdError error) {
+        // Dispose the ad here to free resources.
+        ad.dispose();
+        //  print('バナー広告の読み込みが次の理由で失敗しました: $error');
+      },
+      // Called when an ad opens an overlay that covers the screen.
+      onAdOpened: (Ad ad) => print('バナー広告が開かれました'),
+      // Called when an ad removes an overlay that covers the screen.
+      onAdClosed: (Ad ad) => print('バナー広告が閉じられました'),
+      // Called when an impression occurs on the ad.
+      onAdImpression: (Ad ad) => print('Ad impression.'),
+    ),
+  );
   String mode = '';
   int alarmNo = 0;
 
@@ -101,16 +98,15 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    //動画バナーロード TODO
-    //myBanner.load();
-    // final AdWidget adWidget = AdWidget(ad: myBanner);
-    // final Container adContainer = Container(
-    //   alignment: Alignment.center,
-    //   width: myBanner.size.width.toDouble(),
-    //   height: myBanner.size.height.toDouble(),
-    //   child: adWidget,
-    // );
-
+    //動画バナーロード
+    myBanner.load();
+    final AdWidget adWidget = AdWidget(ad: myBanner);
+    final Container adContainer = Container(
+      alignment: Alignment.center,
+      width: myBanner.size.width.toDouble(),
+      height: myBanner.size.height.toDouble(),
+      child: adWidget,
+    );
     return Scaffold(
       appBar: AppBar(
           title: Text(title), backgroundColor: const Color(0xFF6495ed)),
@@ -320,19 +316,16 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
                   ),
                 ),
                const Padding(padding: EdgeInsets.all(15)),
-                //adContainer, TODO
+                adContainer,
                 const Padding(padding: EdgeInsets.all(10)),
               ]),
         ),
-
       ),
     );
   }
-
   void switchChange(value) {
     setState(() {isAlarmOn = value;},);
   }
-
   void buttonPressed() async {
     ///曜日必須チェック
     if(chkWeek(context,monFlg,tueFlg,wedFlg,thuFlg,friFlg,satFlg,sunFlg) == false) {
@@ -368,7 +361,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     //拡張予定（第一引数：アラームNo,第二引数：ファイルリストNo)
     updateAlarmData(alarmNo,alarmNo);
 
-    ///アラーム処理(画面遷移するまえにアラームON/OFFによって判断する)
+    ///アラーム処理(画面遷移する前にアラームON/OFFによって判断する)
     judgeAlarm(alarmNo,isAlarmOn);
 
     Navigator.push(context, MaterialPageRoute(builder: (context) => playListEditScreen(fileListNo)),);
@@ -465,7 +458,10 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
       await txn.rawInsert(query);
     });
   }
-  Future<void> setAlarm(int alarmID) async{
+  Future<void> setAlarm(int alarmID ,int alarmNo) async{
+
+    //通知権限
+    _requestPermissions();
     ///時刻設定処理(AndroidAlarmManager)
     //時刻を現在時刻と比較する
     DateTime dtNow = DateTime.now();
@@ -483,43 +479,11 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     }
     //対象の曜日になるまで設定時刻を繰り返す(共通化)
     dtAlarmDayTime = calAlarDay(dtBaseDay, monFlg, tueFlg, wedFlg, thuFlg, friFlg, satFlg, sunFlg);
-    ///音楽再生時刻設定
-    //拡張用filelistno = alarmno
-
-
-    ///通知バー時刻設定
-    tz.initializeTimeZones();
-    final String timeZoneName = await FlutterNativeTimezone
-        .getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(timeZoneName));
-
-    tz.TZDateTime scheduledDate =
-    tz.TZDateTime(tz.local, dtAlarmDayTime.year, dtAlarmDayTime.month,
-        dtAlarmDayTime.day, dtAlarmDayTime.hour, dtAlarmDayTime.minute);
-
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-        alarmID, 'シャッフル音楽アラーム', '通知バーをタップをしたら音楽を停止します',
-        scheduledDate,
-        const NotificationDetails(
-            android: AndroidNotificationDetails(
-                'shuffleMusicAlarm', 'シャッフル音楽アラームの通知',
-                channelDescription: 'シャッフル音楽アラームの通知',
-                priority: Priority.max,
-                playSound: false,
-                importance: Importance.max,
-              //  fullScreenIntent: true
-            )), androidAllowWhileIdle: true,
-        payload: alarmNo.toString(),
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation
-            .absoluteTime);
-
-    //3秒delay
-    //(立ち上げっぱなしの人用。通常の流れではない。)
-   //  DateTime dtAlarmDayTimeDeley3 = dtAlarmDayTime.add(Duration(seconds: 3));
-   //  await AndroidAlarmManager.oneShotAt(dtAlarmDayTimeDeley3, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-    //delayなし
-     await AndroidAlarmManager.oneShotAt(dtAlarmDayTime, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
-     // await AndroidAlarmManager.oneShot(const Duration(minutes: 1), alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
+    ///通知時刻設定
+    await notificationSchedule(alarmID,alarmNo,dtAlarmDayTime);
+    ///音楽時刻設定
+    debugPrint('alarmID:$alarmID,$dtAlarmDayTimeで音楽セット');
+    await AndroidAlarmManager.oneShotAt(dtAlarmDayTime, alarmID, playSound1, exact: true, wakeup: true, alarmClock: true, allowWhileIdle: true);
 
   }
   Future<void> judgeAlarm(int alarmNo, bool isAlarmOn) async{
@@ -530,13 +494,14 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
       ///アラーム取消(先に取消しておく)
       await cancelAlarm(alarmID);
       ///アラームオン
-      await setAlarm(alarmID);
+      await setAlarm(alarmID,alarmNo);
     } else {
       ///アラーム取消
       await cancelAlarm(alarmID);
     }
   }
   Future<void> cancelAlarm(int alarmID) async{
+    debugPrint('alarmID:$alarmID を取消');
     //通知の取消
     await flutterLocalNotificationsPlugin.cancel(alarmID);
     //音楽再生の取消
@@ -555,7 +520,6 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     lcRandomNo = randomIntWithRange(1, lcMaxNo + 1);
     return lcRandomNo;
   }
-
   Future<int> getPlayListMaxNo(int fileListNo) async {
     int lcMaxNo = 0;
     String dbPath = await getDatabasesPath();
@@ -573,7 +537,6 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     int value = math.Random().nextInt(max - min);
     return value + min;
   }
-
   Future<String> getPlayListPath(int playNo,int fileListNo) async {
     String musicPath = '';
     String dbPath = await getDatabasesPath();
@@ -588,3 +551,21 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     }
     return musicPath;
   }
+Future<void> _requestPermissions() async {
+  final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+  flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+      AndroidFlutterLocalNotificationsPlugin>();
+  final bool? granted = await androidImplementation?.requestPermission();
+  debugPrint('通知権限:$granted');
+  if(granted == false) {
+    await flutterLocalNotificationsPlugin.show(
+        123456, 'シャッフル音楽アラーム通知許可', 'シャッフル音楽アラームは通知を使います',
+        const NotificationDetails(
+            android: AndroidNotificationDetails('shuffleAlarm', 'シャッフル音楽アラーム',
+                channelDescription: 'シャッフル音楽アラームの通知',
+                priority: Priority.max,
+                playSound: false,
+                importance: Importance.max
+            )));
+  }
+}

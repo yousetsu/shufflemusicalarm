@@ -5,6 +5,7 @@ import 'package:external_path/external_path.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:permission_handler/permission_handler.dart';
 //Musicフォルダ用一覧
 List<Widget> _itemsMusicFolder = <Widget>[];
 List<Map> mapMusicFolder = <Map>[];
@@ -32,6 +33,7 @@ class _playListEditScreenState extends State<playListEditScreen> {
   }
   @override
   Widget build(BuildContext context) {
+
      return DefaultTabController(
             length: 2,
           child: Scaffold(
@@ -246,11 +248,9 @@ Playlistデータ取得
 初期処理
  -------------------------------------------------------------------*/
   void init() async {
-    // await  testEditDB();
     await loadMusicFolder(fileListNo);
     await loadPlayList(fileListNo);
     await getitemsMusicFolder();
     await getitemsPlayList();
   }
-
 }
