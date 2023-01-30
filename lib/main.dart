@@ -243,22 +243,42 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
           },);
         return;
       }
-      //指定したアラームを削除
+      //指定したアラームの取消
+      await cancelAlarm(lcNo);
+      //指定したアラームをアラームテーブルとファイルリストテーブルから削除（拡張）
       await delAlarmDB(lcNo);
+
       //番号振り直し
       await updAlarmListReNo();
       await loadList();
       await getItems();
     }
+  Future<void> cancelAlarm(int alarmNo) async{
+    String strAlarmID = cnsPreAlarmId + alarmNo.toString();
+    int alarmID = int.parse(strAlarmID);
+    debugPrint('alarmID:$alarmIDを取消');
+    //通知の取消
+    await flutterLocalNotificationsPlugin.cancel(alarmID);
+    //音楽再生の取消
+    await AndroidAlarmManager.cancel(alarmID);
+  }
     Future<void> delAlarmDB(int lcNo) async {
+    //アラームNo = ファイルリストNoが前提（拡張）
       String dbPath = await getDatabasesPath();
       String query = '';
       String path = p.join(dbPath, 'internal_assets.db');
       Database database = await openDatabase(path, version: 1,);
+      //アラームテーブルから削除
       query = 'DELETE From alarmList where alarmno = $lcNo';
       await database.transaction((txn) async {
         await txn.rawInsert(query);
       });
+      //プレイリストテーブルから削除
+      query = 'DELETE From playList where filelistno = $lcNo';
+      await database.transaction((txn) async {
+        await txn.rawInsert(query);
+      });
+
     }
     Future<void> updAlarmListReNo() async {
       //番号順にリスト再取得
@@ -267,12 +287,27 @@ class _MainScreenState extends State<MainScreen> with RouteAware {
       String query = '';
       String path = p.join(dbPath, 'internal_assets.db');
       Database database = await openDatabase(path, version: 1);
-      List<Map> lcMapList = await database.rawQuery(
+      //アラームリストテーブルの振り直し
+      List<Map> lcMapAlarmList = await database.rawQuery(
           "SELECT * From alarmList order by alarmno");
-      //番号を振り直しして更新
-      for (Map item in lcMapList) {
+      //番号を振り直しして更新(拡張　アラームNo = ファイルリストNoが前提)
+      for (Map item in lcMapAlarmList) {
+
         query =
-        'UPDATE alarmList set alarmno = $reNo where alarmno = ${item['alarmno']}';
+        'UPDATE alarmList set alarmno = $reNo,filelistno = $reNo where alarmno = ${item['alarmno']}';
+        await database.transaction((txn) async {
+          await txn.rawInsert(query);
+        });
+        reNo++;
+      }
+      reNo = 1;
+      //プレイリストテーブルの振り直し(groupby使用)
+      List<Map> lcMapPlayList = await database.rawQuery(
+          "SELECT filelistno From playList group by filelistno order by filelistno");
+      //番号を振り直しして更新(拡張　アラームNo = ファイルリストNoが前提)
+      for (Map item in lcMapPlayList) {
+        query =
+        'UPDATE playList set filelistno = $reNo where filelistno = ${item['filelistno']}';
         await database.transaction((txn) async {
           await txn.rawInsert(query);
         });

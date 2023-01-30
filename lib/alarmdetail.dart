@@ -479,6 +479,7 @@ class _AlarmDetailScreenState extends State<AlarmDetailScreen> with RouteAware {
     }
     //対象の曜日になるまで設定時刻を繰り返す(共通化)
     dtAlarmDayTime = calAlarDay(dtBaseDay, monFlg, tueFlg, wedFlg, thuFlg, friFlg, satFlg, sunFlg);
+    debugPrint('alarmID:$alarmIDを設定');
     ///通知時刻設定
     await notificationSchedule(alarmID,alarmNo,dtAlarmDayTime);
     ///音楽時刻設定
